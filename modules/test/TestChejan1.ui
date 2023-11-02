@@ -1,0 +1,171 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>Dialog</class>
+ <widget class="QDialog" name="Dialog">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>295</width>
+    <height>434</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Chejan(1) Test Send</string>
+  </property>
+  <layout class="QGridLayout" name="gridLayout">
+   <item row="8" column="0">
+    <widget class="QLabel" name="testCheDialog_9">
+     <property name="text">
+      <string>기준가(f307)</string>
+     </property>
+    </widget>
+   </item>
+   <item row="6" column="1" colspan="2">
+    <widget class="QComboBox" name="f946"/>
+   </item>
+   <item row="0" column="0">
+    <widget class="QLabel" name="testCheDialog_3">
+     <property name="text">
+      <string>종목코드(f9001)</string>
+     </property>
+    </widget>
+   </item>
+   <item row="1" column="0">
+    <widget class="QLabel" name="testCheDialog_4">
+     <property name="text">
+      <string>종목명(f302)</string>
+     </property>
+    </widget>
+   </item>
+   <item row="2" column="1" colspan="2">
+    <widget class="QLineEdit" name="f10">
+     <property name="text">
+      <string>10000</string>
+     </property>
+    </widget>
+   </item>
+   <item row="1" column="1" colspan="2">
+    <widget class="QLineEdit" name="f302">
+     <property name="text">
+      <string>테스트종목</string>
+     </property>
+    </widget>
+   </item>
+   <item row="11" column="2">
+    <widget class="QPushButton" name="btnCancel">
+     <property name="text">
+      <string>취소</string>
+     </property>
+    </widget>
+   </item>
+   <item row="3" column="0">
+    <widget class="QLabel" name="testCheDialog_7">
+     <property name="text">
+      <string>보유수량(f930)</string>
+     </property>
+    </widget>
+   </item>
+   <item row="4" column="1" colspan="2">
+    <widget class="QLineEdit" name="f931">
+     <property name="text">
+      <string>10000</string>
+     </property>
+    </widget>
+   </item>
+   <item row="11" column="1">
+    <widget class="QPushButton" name="btnSend">
+     <property name="text">
+      <string>전송</string>
+     </property>
+    </widget>
+   </item>
+   <item row="6" column="0">
+    <widget class="QLabel" name="testCheDialog_19">
+     <property name="text">
+      <string>매도/매수구분(f946)</string>
+     </property>
+    </widget>
+   </item>
+   <item row="5" column="0">
+    <widget class="QLabel" name="testCheDialog_5">
+     <property name="text">
+      <string>주문가능수량(f933)</string>
+     </property>
+    </widget>
+   </item>
+   <item row="5" column="1" colspan="2">
+    <widget class="QLineEdit" name="f933">
+     <property name="text">
+      <string>10</string>
+     </property>
+    </widget>
+   </item>
+   <item row="9" column="0">
+    <widget class="QLabel" name="testCheDialog_10">
+     <property name="text">
+      <string>당일실현손익(f990)</string>
+     </property>
+    </widget>
+   </item>
+   <item row="2" column="0">
+    <widget class="QLabel" name="testCheDialog_8">
+     <property name="text">
+      <string>현재가(f10)</string>
+     </property>
+    </widget>
+   </item>
+   <item row="8" column="1" colspan="2">
+    <widget class="QLineEdit" name="f307">
+     <property name="text">
+      <string>0000000</string>
+     </property>
+    </widget>
+   </item>
+   <item row="9" column="1" colspan="2">
+    <widget class="QLineEdit" name="f990">
+     <property name="text">
+      <string>+100000</string>
+     </property>
+    </widget>
+   </item>
+   <item row="4" column="0">
+    <widget class="QLabel" name="testCheDialog_6">
+     <property name="text">
+      <string>매입단가(f931)</string>
+     </property>
+    </widget>
+   </item>
+   <item row="3" column="1" colspan="2">
+    <widget class="QLineEdit" name="f930">
+     <property name="text">
+      <string>10</string>
+     </property>
+    </widget>
+   </item>
+   <item row="0" column="1" colspan="2">
+    <widget class="QLineEdit" name="f9001">
+     <property name="text">
+      <string>999999</string>
+     </property>
+    </widget>
+   </item>
+   <item row="10" column="0">
+    <widget class="QLabel" name="testCheDialog_11">
+     <property name="text">
+      <string>당일실현손익률(f991)</string>
+     </property>
+    </widget>
+   </item>
+   <item row="10" column="1" colspan="2">
+    <widget class="QLineEdit" name="f991">
+     <property name="text">
+      <string>+5.25</string>
+     </property>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

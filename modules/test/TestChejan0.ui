@@ -1,0 +1,363 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>Dialog</class>
+ <widget class="QDialog" name="Dialog">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>284</width>
+    <height>509</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Chejan(0) Test Send</string>
+  </property>
+  <layout class="QGridLayout" name="gridLayout">
+   <item row="12" column="1" colspan="2">
+    <widget class="QLineEdit" name="f906">
+     <property name="enabled">
+      <bool>false</bool>
+     </property>
+     <property name="text">
+      <string>보통</string>
+     </property>
+    </widget>
+   </item>
+   <item row="16" column="0">
+    <widget class="QLabel" name="testCheDialog_24">
+     <property name="text">
+      <string>체결량(f911)</string>
+     </property>
+    </widget>
+   </item>
+   <item row="23" column="1">
+    <widget class="QPushButton" name="btnSend">
+     <property name="text">
+      <string>전송</string>
+     </property>
+    </widget>
+   </item>
+   <item row="6" column="1" colspan="2">
+    <widget class="QLineEdit" name="f901">
+     <property name="text">
+      <string>10000</string>
+     </property>
+    </widget>
+   </item>
+   <item row="1" column="1" colspan="2">
+    <widget class="QLineEdit" name="f9001">
+     <property name="text">
+      <string>999999</string>
+     </property>
+    </widget>
+   </item>
+   <item row="19" column="0">
+    <widget class="QLabel" name="testCheDialog_15">
+     <property name="text">
+      <string>현재가(f10)</string>
+     </property>
+    </widget>
+   </item>
+   <item row="20" column="1" colspan="2">
+    <widget class="QLineEdit" name="f919">
+     <property name="enabled">
+      <bool>false</bool>
+     </property>
+     <property name="text">
+      <string>0</string>
+     </property>
+    </widget>
+   </item>
+   <item row="0" column="1" colspan="2">
+    <widget class="QLineEdit" name="f9203">
+     <property name="text">
+      <string>0156034</string>
+     </property>
+    </widget>
+   </item>
+   <item row="4" column="0">
+    <widget class="QLabel" name="testCheDialog_8">
+     <property name="text">
+      <string>종목명(f302)</string>
+     </property>
+    </widget>
+   </item>
+   <item row="7" column="1" colspan="2">
+    <widget class="QLineEdit" name="f902">
+     <property name="text">
+      <string>0</string>
+     </property>
+    </widget>
+   </item>
+   <item row="20" column="0">
+    <widget class="QLabel" name="testCheDialog_21">
+     <property name="text">
+      <string>거부사유(f919)</string>
+     </property>
+    </widget>
+   </item>
+   <item row="9" column="1" colspan="2">
+    <widget class="QLineEdit" name="f904">
+     <property name="text">
+      <string>0000000</string>
+     </property>
+    </widget>
+   </item>
+   <item row="19" column="1" colspan="2">
+    <widget class="QLineEdit" name="f10">
+     <property name="text">
+      <string>10000</string>
+     </property>
+    </widget>
+   </item>
+   <item row="9" column="0">
+    <widget class="QLabel" name="testCheDialog_9">
+     <property name="text">
+      <string>원주문번호(f904)</string>
+     </property>
+    </widget>
+   </item>
+   <item row="7" column="0">
+    <widget class="QLabel" name="testCheDialog_5">
+     <property name="text">
+      <string>미체결수량(f902)</string>
+     </property>
+    </widget>
+   </item>
+   <item row="15" column="0">
+    <widget class="QLabel" name="testCheDialog_14">
+     <property name="text">
+      <string>체결가(f910)</string>
+     </property>
+    </widget>
+   </item>
+   <item row="5" column="1" colspan="2">
+    <widget class="QLineEdit" name="f900">
+     <property name="text">
+      <string>10</string>
+     </property>
+    </widget>
+   </item>
+   <item row="4" column="1" colspan="2">
+    <widget class="QLineEdit" name="f302">
+     <property name="text">
+      <string>테스트종목</string>
+     </property>
+    </widget>
+   </item>
+   <item row="0" column="0">
+    <widget class="QLabel" name="testCheDialog_2">
+     <property name="text">
+      <string>주문번호(f9203)</string>
+     </property>
+    </widget>
+   </item>
+   <item row="17" column="1" colspan="2">
+    <widget class="QLineEdit" name="f914">
+     <property name="text">
+      <string>10000</string>
+     </property>
+    </widget>
+   </item>
+   <item row="5" column="0">
+    <widget class="QLabel" name="testCheDialog_7">
+     <property name="text">
+      <string>주문수량(f900)</string>
+     </property>
+    </widget>
+   </item>
+   <item row="2" column="0">
+    <widget class="QLabel" name="testCheDialog_4">
+     <property name="text">
+      <string>주문상태(f913)</string>
+     </property>
+    </widget>
+   </item>
+   <item row="8" column="0">
+    <widget class="QLabel" name="testCheDialog_19">
+     <property name="text">
+      <string>체결누계금액(f903)</string>
+     </property>
+    </widget>
+   </item>
+   <item row="15" column="1" colspan="2">
+    <widget class="QLineEdit" name="f910">
+     <property name="text">
+      <string>10000</string>
+     </property>
+    </widget>
+   </item>
+   <item row="12" column="0">
+    <widget class="QLabel" name="testCheDialog_10">
+     <property name="text">
+      <string>매매구분(f906)</string>
+     </property>
+    </widget>
+   </item>
+   <item row="14" column="0">
+    <widget class="QLabel" name="testCheDialog_13">
+     <property name="text">
+      <string>체결번호(f909)</string>
+     </property>
+    </widget>
+   </item>
+   <item row="23" column="2">
+    <widget class="QPushButton" name="btnCancel">
+     <property name="text">
+      <string>취소</string>
+     </property>
+    </widget>
+   </item>
+   <item row="1" column="0">
+    <widget class="QLabel" name="testCheDialog_3">
+     <property name="text">
+      <string>종목코드(f9001)</string>
+     </property>
+    </widget>
+   </item>
+   <item row="6" column="0">
+    <widget class="QLabel" name="testCheDialog_6">
+     <property name="text">
+      <string>주문가격(f901)</string>
+     </property>
+    </widget>
+   </item>
+   <item row="14" column="1" colspan="2">
+    <widget class="QLineEdit" name="f909">
+     <property name="text">
+      <string>1420530</string>
+     </property>
+    </widget>
+   </item>
+   <item row="11" column="1">
+    <widget class="QComboBox" name="f905">
+     <item>
+      <property name="text">
+       <string>+매수</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>-매도</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>매수취소</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>매도취소</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>매수정정</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>매도정정</string>
+      </property>
+     </item>
+    </widget>
+   </item>
+   <item row="21" column="0">
+    <widget class="QLabel" name="testCheDialog_22">
+     <property name="text">
+      <string>화면번호(f920)</string>
+     </property>
+    </widget>
+   </item>
+   <item row="2" column="1">
+    <widget class="QComboBox" name="f913">
+     <item>
+      <property name="text">
+       <string>접수</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>체결</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>확인</string>
+      </property>
+     </item>
+    </widget>
+   </item>
+   <item row="8" column="1" colspan="2">
+    <widget class="QLineEdit" name="f903">
+     <property name="text">
+      <string>100000</string>
+     </property>
+    </widget>
+   </item>
+   <item row="11" column="0">
+    <widget class="QLabel" name="testCheDialog_23">
+     <property name="text">
+      <string>주문구분(f905)</string>
+     </property>
+    </widget>
+   </item>
+   <item row="17" column="0">
+    <widget class="QLabel" name="testCheDialog_25">
+     <property name="text">
+      <string>단위체결가(f914)</string>
+     </property>
+    </widget>
+   </item>
+   <item row="13" column="1" colspan="2">
+    <widget class="QLineEdit" name="f908">
+     <property name="text">
+      <string>142449</string>
+     </property>
+    </widget>
+   </item>
+   <item row="21" column="1" colspan="2">
+    <widget class="QLineEdit" name="f920">
+     <property name="enabled">
+      <bool>false</bool>
+     </property>
+     <property name="text">
+      <string>9000</string>
+     </property>
+    </widget>
+   </item>
+   <item row="16" column="1" colspan="2">
+    <widget class="QLineEdit" name="f911">
+     <property name="text">
+      <string>10</string>
+     </property>
+    </widget>
+   </item>
+   <item row="13" column="0">
+    <widget class="QLabel" name="testCheDialog_12">
+     <property name="text">
+      <string>주문체결시간(f908)</string>
+     </property>
+    </widget>
+   </item>
+   <item row="18" column="0">
+    <widget class="QLabel" name="testCheDialog_26">
+     <property name="text">
+      <string>단위체결가(f915)</string>
+     </property>
+    </widget>
+   </item>
+   <item row="18" column="1" colspan="2">
+    <widget class="QLineEdit" name="f915">
+     <property name="text">
+      <string>10</string>
+     </property>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

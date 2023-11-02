@@ -1,0 +1,77 @@
+from modules.api.entity.BaseEntity import BaseEntity;
+
+#########################################
+# 관심종목정보요청 Class ################
+#########################################
+class Optkwfid(BaseEntity):
+    def __init__(self, *args, **kwargs):
+        if kwargs != None:
+            for key, value in kwargs.items():
+                self[key] = value;
+    
+    def getFieldDesc(self):
+        return {
+            "sField01": "종목코드",
+            "sField02": "종목명",
+            "sField03": "현재가",
+            "sField04": "기준가",
+            "sField05": "전일대비",
+            "sField06": "전일대비기호",
+            "sField07": "등락율",
+            "sField08": "거래량",
+            "sField09": "거래대금",
+            "sField10": "체결량",
+            "sField11": "체결강도",
+            "sField12": "전일거래량대비",
+            "sField13": "매도호가",
+            "sField14": "매수호가",
+            "sField15": "매도1차호가",
+            "sField16": "매도2차호가",
+            "sField17": "매도3차호가",
+            "sField18": "매도4차호가",
+            "sField19": "매도5차호가",
+            "sField20": "매수1차호가",
+            "sField21": "매수2차호가",
+            "sField22": "매수3차호가",
+            "sField23": "매수4차호가",
+            "sField24": "매수5차호가",
+            "sField25": "상한가",
+            "sField26": "하한가",
+            "sField27": "시가",
+            "sField28": "고가",
+            "sField29": "저가",
+            "sField30": "종가",
+            "sField31": "체결시간",
+            "sField32": "예상체결가",
+            "sField33": "예상체결량",
+            "sField34": "자본금",
+            "sField35": "액면가",
+            "sField36": "시가총액",
+            "sField37": "주식수",
+            "sField38": "호가시간",
+            "sField39": "일자",
+            "sField40": "우선매도잔량",
+            "sField41": "우선매수잔량",
+            "sField42": "우선매도건수",
+            "sField43": "우선매수건수",
+            "sField44": "총매도잔량",
+            "sField45": "총매수잔량",
+            "sField46": "총매도건수",
+            "sField47": "총매수건수",
+            "sField48": "패리티",
+            "sField49": "기어링",
+            "sField50": "손익분기",
+            "sField51": "자본지지",
+            "sField52": "ELW행사가",
+            "sField53": "전환비율",
+            "sField54": "ELW만기일",
+            "sField55": "미결제약정",
+            "sField56": "미결제전일대비",
+            "sField57": "이론가",
+            "sField58": "내재변동성",
+            "sField59": "델타",
+            "sField60": "감마",
+            "sField61": "쎄타",
+            "sField62": "베가",
+            "sField63": "로",
+        };
