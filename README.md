@@ -10,10 +10,10 @@ Kiwoon OpenAPI를 이용하여 조건식을 활용한 간단한 자동매매 프
     - python-telegram-bot(20.6)
 
 # 필수사항
-    * Kiwoom 계좌
+    ## Kiwoom 계좌
 https://www.google.com/search?q=kiwoom+%EA%B3%84%EC%A2%8C%EA%B0%9C%EC%84%A4&sca_esv=578828967&rlz=1C1BNSD_koKR1074KR1074&ei=1bdDZZviGoj51e8PxPaESA&ved=0ahUKEwjboNLeyKWCAxWIfPUHHUQ7AQkQ4dUDCBA&uact=5&oq=kiwoom+%EA%B3%84%EC%A2%8C%EA%B0%9C%EC%84%A4&gs_lp=Egxnd3Mtd2l6LXNlcnAiE2tpd29vbSDqs4TsoozqsJzshKQyBRAhGKABSPojUO4IWJIjcAh4AJABBJgB_QGgAfAOqgEGMC4xMC4yuAEDyAEA-AEBwgIKEAAYRxjWBBiwA8ICBRAAGIAE4gMEGAAgQYgGAZAGCg&sclient=gws-wiz-serp
 
-    * Kiwoom OpenAPI 설치
+    ## Kiwoom OpenAPI 설치
 https://www.google.com/search?q=Kiwoon+OpenAPI+%EC%84%A4%EC%B9%98&rlz=1C1BNSD_koKR1074KR1074&oq=Kiwoon+OpenAPI+%EC%84%A4%EC%B9%98&gs_lcrp=EgZjaHJvbWUyBggAEEUYOdIBCDc0ODVqMGo3qAIAsAIA&sourceid=chrome&ie=UTF-8
 
     * Kiwoom 조건검색식
