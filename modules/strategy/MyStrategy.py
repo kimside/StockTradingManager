@@ -259,8 +259,8 @@ class MyStrategy(AbstractStrategy):
             orderAmount = vOrderableAmount * (self.appSettings.vBuyRateValue / 100);
         else:
             orderAmount = self.appSettings.vBuyAmountValue if vOrderableAmount > self.appSettings.vBuyAmountValue else vOrderableAmount;
-        taxAmount = (nowPrice + int(nowPrice * self.parent.buyTaxRate / 10 * 10));
-        return int(orderAmount / taxAmount);
+        buyAmount = (nowPrice + int(nowPrice * self.parent.buyTaxRate / 10 * 10));
+        return int(orderAmount / buyAmount);
 
     #주문신청
     def sendOrder(self, order, stock):
@@ -295,7 +295,17 @@ class MyStrategy(AbstractStrategy):
                     "reason"     : order["reason"    ],#주문사유
                 });
 
-                if result == -308:
+                if result == 0:
+                    #체결,잔고 signal받는 곳에서 처리할려고 했는데.. 그사이 너무 많이 매수 신청을 해서.. 신청즉시 재매수금지 등록을 해야함
+                    #근데... 신청결과에서는 잔고부족이나, 기타 다른 오류는 확인이 불가한데... 이거 신청만 되고 체결이 안되면..
+                    #그냥 재매수 금지항목에만 등록되는건데. 뭐 다른 방법이 없나???
+                    if order["reason"] == "조건검색 신규 매수":
+                        #신규매수항목임
+                        self.appSettings.orderList.add((stock["stockCode"], stock["stockName"]));
+                        self.appSettings.setValue("orderList", self.appSettings.orderList);
+                        #속도가 너무느리다
+                        #self.appSettings.sync();
+                elif result == -308:
                     time.sleep(0.25);
             
             elif order["nOrderType"] in [3, 4]:

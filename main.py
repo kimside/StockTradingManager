@@ -729,13 +729,6 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
                     "reminingCount" : obj["f933" ],#주문가능수량
                 });
 
-                if self.twMyStocks.isExist(obj["f9001"]) == None:
-                    #신규매수항목임
-                    self.appSettings.orderList.add((myStock["stockCode"], myStock["stockName"]));
-                    self.appSettings.setValue("orderList", self.appSettings.orderList);
-                    #속도가 너무느리다
-                    #self.appSettings.sync();
-                
                 self.twMyStocks.addRows([myStock]);
                 self.setRealReg("4000", myStock["stockCode"]);
     
