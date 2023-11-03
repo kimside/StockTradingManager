@@ -36,13 +36,23 @@ logger=logging.getLogger(__name__);
 --------------------------------------
 1000: tr요청(기본값)
 2000: 다건 tr요청(조건검색결과는 8000을 사용)
-3000: 주문요청
+3000: 주문요청(
+    3001: 신규매수,
+    3002: 신규매도,
+    3011: TrailingStop(매수) 손실 추가매수,
+    3012: TrailingStop(매도) 수익달성,
+    3013: TrailingStop(매도) 수익보존,
+    3014: TrailingStop(매도) 손실 전량매도,
+    3021: StopLoss(매수) 손실 추가매수,
+    3022: StopLoss(매도) 수익달성,
+    3023: StopLoss(매도) 손실 전량매도,
+)
 4000: 내 계좌 실시간 시세요청
 5000: 
 6000:
 7000: 미체결잔고 실시간 시세요청
 8000: 조건검색 실시간 시세요청
-9000: 기타 미지정
+9000: 시스템활용 화면번호
 """
 def resource_path(relative_path):
     try:# PyInstaller creates a temp folder and stores path in _MEIPASS
@@ -89,6 +99,7 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
         self.apiMsgSignal.connect(self.addConsoleSlot);
         self.loginSignal.connect(self.isLoginSlot);
         self.chejanSignal.connect(self.addChejanSlot);
+        self.cancelSignal.connect(self.orderCancelSlot);
 
         self.btnConMax.clicked.connect(lambda: self.setSplitterSlot("con"));
         self.btnMiddle.clicked.connect(lambda: self.setSplitterSlot("mid"));
@@ -128,6 +139,28 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
         if self.appSettings.__getattribute__("vAutoLogin"):
             self.actLoginSlot();
     
+    #주문취소 적용
+    def orderCancelSlot(self, obj):
+        """
+        3001: 신규매수,
+        3002: 신규매도,
+        3011: TrailingStop(매수) 손실 추가매수,
+        3012: TrailingStop(매도) 수익달성,
+        3013: TrailingStop(매도) 수익보존,
+        3014: TrailingStop(매도) 손실 전량매도,
+        3021: StopLoss(매수) 손실 추가매수,
+        3022: StopLoss(매도) 수익달성,
+        3023: StopLoss(매도) 손실 전량매도,
+        """
+        #cancelOrder = self.twChejanStocks.getRowDatas(obj["orderNo"]);
+        #for chejanHis in self.twChejanHisStocks.getRowDatas():
+        #   if chejanHis["orderNo"] == cancelOrder["oriOrderNo"]:
+        #       
+        print(datetime.datetime.now(), "orderCancelSlot");
+        if obj["sScrNo"] == "3001":
+            pass;
+    
+    #텔레그램 메세지 발송
     async def sendMessage(self, telegramMsg): #실행시킬 함수명 임의지정
         self.appSettings.vBotId;
         self.appSettings.vChatId;
@@ -162,63 +195,63 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
     #TableWdiget 컬럼 초기화
     def initTableWidget(self):
         self.twConStocks.initWidget([
-            {"id": "stockCode"    , "name": "종목코드", "type": str  , "formatter": "{0:}"  , "align": QtCore.Qt.AlignRight, "isKey" : True},
-            {"id": "stockName"    , "name": "종목명"  , "type": str  , "formatter": "{0:}"  , "align": QtCore.Qt.AlignLeft},
-            {"id": "nowPrice"     , "name": "현재가"  , "type": int  , "formatter": "{0:,}" , "align": QtCore.Qt.AlignRight},
-            {"id": "stdPrice"     , "name": "기준가"  , "type": int  , "formatter": "{0:,}" , "align": QtCore.Qt.AlignRight},
-            {"id": "diffPrice"    , "name": "전일대비", "type": int  , "formatter": "{0:+,}", "align": QtCore.Qt.AlignRight},
-            {"id": "changeRate"   , "name": "등락율"  , "type": float, "formatter": "{0:+}%", "align": QtCore.Qt.AlignRight, "isBg": True},
-            {"id": "tradeCount"   , "name": "거래량"  , "type": int  , "formatter": "{0:,}" , "align": QtCore.Qt.AlignRight},
-            {"id": "tradeStrength", "name": "체결강도", "type": float, "formatter": "{0:,}" , "align": QtCore.Qt.AlignRight},
+            {"id": "stockCode"    , "name": "종목코드", "type": str, "isKey" : True},
+            {"id": "stockName"    , "name": "종목명"  , "type": str},
+            {"id": "nowPrice"     , "name": "현재가"  , "type": int},
+            {"id": "stdPrice"     , "name": "기준가"  , "type": int},
+            {"id": "diffPrice"    , "name": "전일대비", "type": int, "formatter": "{0:+,}"},
+            {"id": "changeRate"   , "name": "등락율"  , "type": float, "formatter": "{0:+}%", "isBg": True},
+            {"id": "tradeCount"   , "name": "거래량"  , "type": int},
+            {"id": "tradeStrength", "name": "체결강도", "type": float},
         ]);
         
         self.twMyStocks.initWidget([
-            {"id": "stockCode"     , "name": "종목코드"  , "type": str  , "formatter": "{0:}"     , "align": QtCore.Qt.AlignRight, "isKey" : True},
-            {"id": "stockName"     , "name": "종목명"    , "type": str  , "formatter": "{0:}"     , "align": QtCore.Qt.AlignLeft},
-            {"id": "averagePrice"  , "name": "평균단가"  , "type": int  , "formatter": "{0:,}"    , "align": QtCore.Qt.AlignRight},
-            {"id": "nowPrice"      , "name": "현재가"    , "type": int  , "formatter": "{0:,}"    , "align": QtCore.Qt.AlignRight},
-            {"id": "breakEvenPrice", "name": "손익분기가", "type": int  , "formatter": "{0:,}"    , "align": QtCore.Qt.AlignRight},
-            {"id": "profit"        , "name": "손익금액"  , "type": int  , "formatter": "{0:+,}"   , "align": QtCore.Qt.AlignRight},
-            {"id": "profitRate"    , "name": "손익율"    , "type": float, "formatter": "{0:+.2f}%", "align": QtCore.Qt.AlignRight, "isBg": True},
-            {"id": "buyAmount"     , "name": "매입금액"  , "type": int  , "formatter": "{0:,}"    , "align": QtCore.Qt.AlignRight},
-            {"id": "nowAmount"     , "name": "평가금액"  , "type": int  , "formatter": "{0:,}"    , "align": QtCore.Qt.AlignRight},
-            {"id": "totalTax"      , "name": "세금합계"  , "type": int  , "formatter": "{0:,}"    , "align": QtCore.Qt.AlignRight},
-            {"id": "stockCount"    , "name": "보유량"    , "type": int  , "formatter": "{0:,}"    , "align": QtCore.Qt.AlignRight},
-            {"id": "reminingCount" , "name": "매도가능"  , "type": int  , "formatter": "{0:,}"    , "align": QtCore.Qt.AlignRight},
+            {"id": "stockCode"     , "name": "종목코드"  , "type": str, "isKey" : True},
+            {"id": "stockName"     , "name": "종목명"    , "type": str},
+            {"id": "averagePrice"  , "name": "평균단가"  , "type": int},
+            {"id": "nowPrice"      , "name": "현재가"    , "type": int},
+            {"id": "breakEvenPrice", "name": "손익분기가", "type": int},
+            {"id": "profit"        , "name": "손익금액"  , "type": int, "formatter": "{0:+,}"},
+            {"id": "profitRate"    , "name": "손익율"    , "type": float, "formatter": "{0:+.2f}%", "isBg": True},
+            {"id": "buyAmount"     , "name": "매입금액"  , "type": int},
+            {"id": "nowAmount"     , "name": "평가금액"  , "type": int},
+            {"id": "totalTax"      , "name": "세금합계"  , "type": int},
+            {"id": "stockCount"    , "name": "보유량"    , "type": int},
+            {"id": "reminingCount" , "name": "매도가능"  , "type": int},
         ]);
 
         self.twChejanStocks.initWidget([
-            {"id": "chejanTime"  , "name": "요청시간"  , "type": datetime.datetime, "formatter": "{0:%Y-%m-%d %H:%M:%S}" , "align": QtCore.Qt.AlignRight},
-            {"id": "orderNo"     , "name": "주문번호"  , "type": str              , "formatter": "{0:}"                  , "align": QtCore.Qt.AlignRight, "isKey": True},
-            {"id": "hogaGb"      , "name": "주문구분"  , "type": str              , "formatter": "{0:}"                  , "align": QtCore.Qt.AlignCenter},
-            {"id": "stockCode"   , "name": "종목코드"  , "type": str              , "formatter": "{0:}"                  , "align": QtCore.Qt.AlignRight},
-            {"id": "stockName"   , "name": "종목명"    , "type": str              , "formatter": "{0:}"                  , "align": QtCore.Qt.AlignLeft},
-            {"id": "orderStatus" , "name": "주문상태"  , "type": str              , "formatter": "{0:}"                  , "align": QtCore.Qt.AlignCenter},
-            {"id": "nowPrice"    , "name": "현재가"    , "type": int              , "formatter": "{0:,}"                 , "align": QtCore.Qt.AlignRight},
-            {"id": "orderPrice"  , "name": "주문가격"  , "type": int              , "formatter": "{0:,}"                 , "align": QtCore.Qt.AlignRight},
-            {"id": "orderCount"  , "name": "주문수량"  , "type": int              , "formatter": "{0:,}"                 , "align": QtCore.Qt.AlignRight},
-            {"id": "chejanCount" , "name": "체결수량"  , "type": int              , "formatter": "{0:,}"                 , "align": QtCore.Qt.AlignRight},
-            {"id": "missCount"   , "name": "미체결수량", "type": int              , "formatter": "{0:,}"                 , "align": QtCore.Qt.AlignRight},
-            {"id": "chejanGb"    , "name": "매매구분"  , "type": str              , "formatter": "{0:}"                  , "align": QtCore.Qt.AlignCenter},
-            {"id": "oriOrderNo"  , "name": "원주문번호", "type": str              , "formatter": "{0:}"                  , "align": QtCore.Qt.AlignRight},
-            {"id": "bgCol"       , "name": "배경색"    , "type": int              , "formatter": "{0:}"                  , "align": QtCore.Qt.AlignRight, "isBg": True, "isVisible": False},
+            {"id": "chejanTime"  , "name": "요청시간"  , "type": datetime.datetime, "formatter": "{0:%Y-%m-%d %H:%M:%S}"},
+            {"id": "orderNo"     , "name": "주문번호"  , "type": str, "isKey": True},
+            {"id": "hogaGb"      , "name": "주문구분"  , "type": str, "align": QtCore.Qt.AlignCenter},
+            {"id": "stockCode"   , "name": "종목코드"  , "type": str},
+            {"id": "stockName"   , "name": "종목명"    , "type": str},
+            {"id": "orderStatus" , "name": "주문상태"  , "type": str, "align": QtCore.Qt.AlignCenter},
+            {"id": "nowPrice"    , "name": "현재가"    , "type": int},
+            {"id": "orderPrice"  , "name": "주문가격"  , "type": int},
+            {"id": "orderCount"  , "name": "주문수량"  , "type": int},
+            {"id": "chejanCount" , "name": "체결수량"  , "type": int},
+            {"id": "missCount"   , "name": "미체결수량", "type": int},
+            {"id": "chejanGb"    , "name": "매매구분"  , "type": str, "align": QtCore.Qt.AlignCenter},
+            {"id": "oriOrderNo"  , "name": "원주문번호", "type": str},
+            {"id": "bgCol"       , "name": "배경색"    , "type": int, "isBg": True, "isVisible": False},
         ]);
         self.twChejanStocks.sortItems(0, QtCore.Qt.DescendingOrder);
 
         self.twChejanHisStocks.initWidget([
-            {"id": "chejanTime"  , "name": "요청시간"  , "type": datetime.datetime, "formatter": "{0:%Y-%m-%d %H:%M:%S}" , "align": QtCore.Qt.AlignRight},
-            {"id": "orderNo"     , "name": "주문번호"  , "type": str              , "formatter": "{0:}"                  , "align": QtCore.Qt.AlignRight},
-            {"id": "hogaGb"      , "name": "주문구분"  , "type": str              , "formatter": "{0:}"                  , "align": QtCore.Qt.AlignCenter},
-            {"id": "stockCode"   , "name": "종목코드"  , "type": str              , "formatter": "{0:}"                  , "align": QtCore.Qt.AlignRight},
-            {"id": "stockName"   , "name": "종목명"    , "type": str              , "formatter": "{0:}"                  , "align": QtCore.Qt.AlignLeft},
-            {"id": "orderStatus" , "name": "주문상태"  , "type": str              , "formatter": "{0:}"                  , "align": QtCore.Qt.AlignCenter},
-            {"id": "orderPrice"  , "name": "주문가격"  , "type": int              , "formatter": "{0:,}"                 , "align": QtCore.Qt.AlignRight},
-            {"id": "orderCount"  , "name": "주문수량"  , "type": int              , "formatter": "{0:,}"                 , "align": QtCore.Qt.AlignRight},
-            {"id": "chejanCount" , "name": "체결수량"  , "type": int              , "formatter": "{0:,}"                 , "align": QtCore.Qt.AlignRight},
-            {"id": "missCount"   , "name": "미체결수량", "type": int              , "formatter": "{0:,}"                 , "align": QtCore.Qt.AlignRight},
-            {"id": "chejanGb"    , "name": "매매구분"  , "type": str              , "formatter": "{0:}"                  , "align": QtCore.Qt.AlignCenter},
-            {"id": "oriOrderNo"  , "name": "원주문번호", "type": str              , "formatter": "{0:}"                  , "align": QtCore.Qt.AlignRight},
-            {"id": "bgCol"       , "name": "배경색"    , "type": int              , "formatter": "{0:}"                  , "align": QtCore.Qt.AlignRight, "isBg": True, "isVisible": False},
+            {"id": "chejanTime"  , "name": "요청시간"  , "type": datetime.datetime, "formatter": "{0:%Y-%m-%d %H:%M:%S}"},
+            {"id": "orderNo"     , "name": "주문번호"  , "type": str},
+            {"id": "hogaGb"      , "name": "주문구분"  , "type": str, "align": QtCore.Qt.AlignCenter},
+            {"id": "stockCode"   , "name": "종목코드"  , "type": str},
+            {"id": "stockName"   , "name": "종목명"    , "type": str},
+            {"id": "orderStatus" , "name": "주문상태"  , "type": str, "align": QtCore.Qt.AlignCenter},
+            {"id": "orderPrice"  , "name": "주문가격"  , "type": int},
+            {"id": "orderCount"  , "name": "주문수량"  , "type": int},
+            {"id": "chejanCount" , "name": "체결수량"  , "type": int},
+            {"id": "missCount"   , "name": "미체결수량", "type": int},
+            {"id": "chejanGb"    , "name": "매매구분"  , "type": str, "align": QtCore.Qt.AlignCenter},
+            {"id": "oriOrderNo"  , "name": "원주문번호", "type": str},
+            {"id": "bgCol"       , "name": "배경색"    , "type": int, "isBg": True, "isVisible": False},
         ]);
         self.twChejanHisStocks.sortItems(1, QtCore.Qt.DescendingOrder);    
 
@@ -466,7 +499,9 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
     
     #실시간 수신 데이터 Grid에 반영
     def stockSignalSlot(self, obj):
-        sScrNoList = obj["f920"].split(";") if "f920" in obj else [];
+        sScrNoList = obj["f920"].split(";") \
+                     if "f920" in obj else  \
+                     [];
 
         if obj["sRealType"] in ["주식체결"] :
             #계좌 보유주식 정보 업데이트
@@ -479,13 +514,12 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
             
             #미체결 잔고 현재가 업데이트
             if "7000" in sScrNoList:
-                chejanStocks = self.twChejanStocks.getRowDatas(obj["f9001"]);
-                for chejanStock in chejanStocks:
-                    chejanStock["nowPrice"] = obj["f10"];
-                    self.twChejanStocks.addRows(chejanStock);
-                
                 #미체결 대기시간 초과 항목 취소 주문
                 for chejanStock in self.twChejanStocks.getRowDatas():
+                    if chejanStock["stockCode"] == obj["f9001"]:
+                        chejanStock["nowPrice"] = obj["f10"];
+                        self.twChejanStocks.addRows(chejanStock);
+                    
                     if self.appSettings.vOrderCancelSecActive:
                         diff = datetime.datetime.now() - chejanStock["chejanTime"];
                         if diff.seconds > self.appSettings.vOrderCancelSec and chejanStock["hogaGb"] in ["+매수", "-매도"]:
@@ -582,7 +616,6 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
                         break;
                 
                 if not delayEcho:
-                    chejan["sender"] = "addChejanSlot";
                     self.twChejanStocks.addRows(chejan);
             
             self.twChejanHisStocks.addRows(chejan);
@@ -616,8 +649,23 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
                     self.twChejanStocks.addRows(chejanStock);
                 
             elif chejan["hogaGb"] == "매수취소":
+                #개발사항: 매수 취소시..  전략부분 원복... 근디.. 최초 매수인지, 추가매수인지 모르는디.. 어떻게 확인 처리하지??
+                if chejan["stockCode"] in self.appSettings.myStrategy:#존재한다면.. 기존에 손실 추가매수 항목
+                    if self.appSettings.currentTab == 0:#TrailingStop
+                        if self.appSettings.myStrategy[chejan["stockCode"]]["tsAddBuy"] > 0:
+                            self.appSettings.myStrategy[chejan["stockCode"]]["tsAddBuy"] -= 1;
+                            self.appSettings.setValue("myStrategy", self.appSettings.myStrategy);
+                    else:
+                        if self.appSettings.myStrategy[chejan["stockCode"]]["slAddBuy"] > 0:
+                            self.appSettings.myStrategy[chejan["stockCode"]]["slAddBuy"] -= 1;
+                            self.appSettings.setValue("myStrategy", self.appSettings.myStrategy);
+                else:#존재하지 않는다면.. 최초 매수 항목(재매수금지항목에서 제거)
+                    self.appSettings.orderList.remove((chejan["stockCode"], chejan["stockName"]));
+                    self.appSettings.setValue("orderList", self.appSettings.orderList);
+
                 #원주문번호를 찾아 해당 주문건을 삭제한다.
                 self.twChejanStocks.delRows(chejan["oriOrderNo"]);
+                
                 isFound = False;
                 for c in self.twChejanStocks.getRowDatas():
                     if c["stockCode"] == chejan["stockCode"] and c["orderNo"] != chejan["oriOrderNo"]:
@@ -628,6 +676,14 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
                     self.setRealRemove("7000", chejan["stockCode"]);
             
             elif chejan["hogaGb"] == "매도취소":
+                #개발사항: 매도 취소시..  전략부분 원복... 근디.. 수익 매도인지, 손실매도인지 모르는디.. 어떻게 확인 처리하지??
+                if chejan["stockCode"] in self.appSettings.myStrategy:
+                    myStrategy = self.appSettings.myStrategy[chejan["stockCode"]];
+                    if self.appSettings.currentTab == 0:#TrailingStop
+                        if chejan["nowPrice"] < myStrategy["averagePrice"] and myStrategy["tsAddSell"] > 0:#매입단가가 현재가 보다 높다면 수익매도
+                            self.appSettings.myStrategy[chejan["stockCode"]]["tsAddSell"] -= 1;
+                            self.appSettings.setValue("myStrategy", self.appSettings.myStrategy);
+                
                 #계좌 보유주식 주문가능수량 업데이트
                 #부분 체결이 되었을수도 있기에..  확인해야한다.
                 myStocks = self.twMyStocks.getRowDatas(chejan["stockCode"]);
@@ -922,6 +978,8 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
         msg += ", {0}".format(self.preFormat(obj["sRQName"] if obj["sRQName"] != "" else obj["sTrCode"], 30, "<"));
         msg += ", {0}".format(obj["sMsg"]);
         
+        if obj["sScrNo"] == "3001":
+            pass;
         self.tbConsole.append(msg);
         self.statusbar.showMessage(msg, 5000);
     
@@ -1051,7 +1109,7 @@ def testLogFile(obj, ext={}, vOrderableAmount=""):
             writeText += ", 주문번호({0})"    .format(Main.preFormat("", obj["orderNo"    ],  7, "<"));
             writeText += ", 종목명({0})"      .format(Main.preFormat("", obj["stockName"  ], 20, "<"));
             writeText += ", 종목코드({0})"    .format(Main.preFormat("", obj["stockCode"  ],  6, ">"));
-            writeText += ", 매매구분({0})"    .format(Main.preFormat("", obj["hogaGb"     ],  3, ">"));
+            writeText += ", 매매구분({0})"    .format(Main.preFormat("", obj["hogaGb"     ],  8, ">"));
             writeText += ", 주문가격({0})"    .format(Main.preFormat("", obj["orderPrice" ],  7, ">"));
             writeText += ", 주문수량({0})"    .format(Main.preFormat("", obj["orderCount" ],  7, ">"));
             writeText += ", 체결수량({0})"    .format(Main.preFormat("", obj["chejanCount"],  3, ">"));

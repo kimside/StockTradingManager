@@ -6,6 +6,7 @@ from PyQt5Singleton import Singleton;
 from modules.exception.NotInsallOpenAPI import NotInsallOpenAPI;
 from modules.api.LogMaker               import LogMaker;
 from modules.api.entity.UserInfo        import UserInfo;
+from modules.api.entity.Optkwfid        import Optkwfid;
 
 class KiwoomAPI(LogMaker, metaclass=Singleton):
     loginSignal    = QtCore.pyqtSignal(object);
@@ -13,6 +14,7 @@ class KiwoomAPI(LogMaker, metaclass=Singleton):
     stockSignal    = QtCore.pyqtSignal(object);
     apiMsgSignal   = QtCore.pyqtSignal(object);
     chejanSignal   = QtCore.pyqtSignal(object);
+    cancelSignal   = QtCore.pyqtSignal(object);
 
     ##생성자
     def __init__(self, parent=None, **kwargs):
@@ -205,13 +207,13 @@ class KiwoomAPI(LogMaker, metaclass=Singleton):
     #sRecordName,  // 레코드 이름
     #sPrevNext,    // 연속조회 유무를 판단하는 값 0: 연속(추가조회)데이터 없음, 2:연속(추가조회) 데이터 있음
     def onReceiveTrData(self, sScrNo, sRQName, sTrCode, sRecordName, sPrevNext):
+        rows = self.api.dynamicCall("GetRepeatCnt(QString, QString)", sTrCode, sRQName);
+        rows = rows if rows != 0 else 1;
+            
         if sTrCode not in ("KOA_NORMAL_BUY_KP_ORD" , "KOA_NORMAL_BUY_KQ_ORD", 
                            "KOA_NORMAL_SELL_KP_ORD", "KOA_NORMAL_SELL_KQ_ORD",
                            "KOA_NORMAL_KP_CANCEL"  , "KOA_NORMAL_KQ_CANCEL",
                            "KOA_NORMAL_KP_MODIFY"  , "KOA_NORMAL_KQ_MODIFY"):
-            rows = self.api.dynamicCall("GetRepeatCnt(QString, QString)", sTrCode, sRQName);
-            rows = rows if rows != 0 else 1;
-            
             if self.receiveTrDataMulti:
                 rowData = self.reminingDatas if self.reminingDatas != None else [];
                 for row in range(rows):
@@ -254,7 +256,17 @@ class KiwoomAPI(LogMaker, metaclass=Singleton):
                 if self.onReceiveTrDataLoop.isRunning():
                     self.onReceiveTrDataLoop.exit();
         else:
-            pass;
+            if sTrCode in ["KOA_NORMAL_KP_CANCEL", "KOA_NORMAL_KQ_CANCEL"]:
+                obj = {
+                    "sScrNo" : sScrNo,
+                    "sRQName": sRQName,
+                    "sTrCode": sTrCode,
+                    "orderNo": self.api.dynamicCall("GetCommData(QString, QString, int, QString)", sTrCode, sRQName, 0, "field").strip(),
+                }
+                
+                #주문번호가 비어있다면 오류가 발생한 주문으로 처리하지 않음
+                if obj["orderNo"] != "":
+                    self.cancelSignal.emit(obj);
     
     #조건검색목록 요청처리
     def getConditionLoad(self):
@@ -1065,6 +1077,13 @@ class KiwoomAPI(LogMaker, metaclass=Singleton):
                 "f920"  : sScrNo,
                 "reason": reason,
             });
+
+            #if not self.onReceiveTrDataLoop.isRunning():
+            #    self.onReceiveTrDataLoop.exec_();
+            
+            #print(self.trOutput);
+            #result = self.trOutput;
+
         else:
             self.apiMsgSignal.emit({
                 "sScrNo" : sScrNo,
@@ -1078,6 +1097,9 @@ class KiwoomAPI(LogMaker, metaclass=Singleton):
                 "sTrCode": "sendOrder",
                 "msg"   : ("{0}({1})를 {2}({3})주를 {4} 신청 오류가 발생하였습니다.({5})").format(masterCodeName, sCode, nPrice, nQty, self.nOrderType[nOrderType], self.errCodes[result]),
             });
+
+            #self.trOutput = None;
+        
         return result;
     
     #체결잔고 정보 요청

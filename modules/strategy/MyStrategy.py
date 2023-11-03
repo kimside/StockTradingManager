@@ -33,15 +33,17 @@ class MyStrategy(AbstractStrategy):
                 #계좌보유주식 목록에 없음
                 #순간체결강도 집계 목록이 30개 넘음
                 #순간체결강도가 150이상
-                if not (obj["f9001"], obj["f302"]) in self.appSettings.orderList \
-                    and self.parent.twMyStocks.isExist(obj["f9001"]) == None     \
-                    and len(thisStrategy["momentList"]) > 30                     \
+                if not (obj["f9001"], obj["f302"]) in self.appSettings.orderList           \
+                    and len(self.appSettings.orderList) <= self.appSettings.vTradeMaxCount \
+                    and self.parent.twMyStocks.isExist(obj["f9001"]) == None               \
+                    and len(thisStrategy["momentList"]) > 30                               \
                     and thisStrategy["momentStrength"]  > 150:
                     
                     orderCount = self.getBuyCount(int(obj["f10"]));
                     obj["reminingCount"] = orderCount;
                     if orderCount > 0:
                         result = self.sendOrder({
+                            "sScrNo"     : "3001",
                             "nOrderType" : 1,
                             "sCode"      : obj["f9001"],
                             "nQty"       : orderCount,
@@ -112,6 +114,7 @@ class MyStrategy(AbstractStrategy):
                              if orderCount == 0 else  \
                              orderCount;
                 result = self.sendOrder({
+                    "sScrNo"     : "3012",
                     "nOrderType": 2,
                     "sCode"     : myStock["stockCode"],
                     "nQty"      : orderCount,
@@ -121,6 +124,7 @@ class MyStrategy(AbstractStrategy):
 
                 if result == 0:
                     myStrategy["tsDivSell"] += 1;
+            
             elif nowPrice > myStrategy["averagePrice"] + int(myStrategy["averagePrice"] * (tsProfitRate + (myStrategy.get("tsDivSell") * tsDivProfitRate)) / 100):
                 #현재가가 초과 수익가를 넘었다면 분할매도
                 maxSellCnt = int(100 / tsDivRate);#분할매도 마지막 회차에는 주문가능수량을 전량 매도신청한다.
@@ -131,6 +135,7 @@ class MyStrategy(AbstractStrategy):
                              if orderCount == 0 else  \
                              orderCount;
                 result = self.sendOrder({
+                    "sScrNo"    : "3012",
                     "nOrderType": 2,
                     "sCode"     : myStock["stockCode"],
                     "nQty"      : orderCount,
@@ -144,12 +149,16 @@ class MyStrategy(AbstractStrategy):
             elif nowPrice < myStrategy["averagePrice"] + (myStrategy["tsHighPrice"] - myStrategy["averagePrice"]) * tsServeRate / 100:
                 #고점대비 현재가가 수익보존율 보다 낮다면 매도
                 result = self.sendOrder({
+                    "sScrNo"    : "3013",
                     "nOrderType": 2,
                     "sCode"     : myStock["stockCode"    ],
                     "nQty"      : myStock["reminingCount"],
                     "nPrice"    : nowPrice,
                     "reason"    : "TrailingStop 수익보존 매도",
                 }, myStock);
+
+                if result == 0:
+                    myStrategy["tsDivSell"] += 1;
         else:
             #목표 수익율 미진입(손실율에 도달했다면)
             if nowPrice < myStrategy["averagePrice"] + int(myStrategy["averagePrice"] * (tsLossRate * myStrategy.get("tsAddBuy")) / 100):
@@ -158,6 +167,7 @@ class MyStrategy(AbstractStrategy):
                     orderCount = self.getBuyCount(nowPrice);
                     if orderCount > 0:
                         result = self.sendOrder({
+                            "sScrNo"     : "3011",
                             "nOrderType" : 1,
                             "sCode"      : myStock["stockCode"],
                             "nQty"       : orderCount,
@@ -169,6 +179,7 @@ class MyStrategy(AbstractStrategy):
                             myStrategy["tsAddBuy"] += 1;
                 else:
                     result = self.sendOrder({
+                        "sScrNo"    : "3014",
                         "nOrderType": 2,
                         "sCode"     : myStock["stockCode"    ],
                         "nQty"      : myStock["reminingCount"],
@@ -194,6 +205,7 @@ class MyStrategy(AbstractStrategy):
         
         if slProfit <= myStock["profitRate"]:
             result = self.sendOrder({
+                "sScrNo"    : "3022",
                 "nOrderType": 2,
                 "sCode"     : myStock["stockCode"    ],
                 "nQty"      : myStock["reminingCount"],
@@ -205,6 +217,7 @@ class MyStrategy(AbstractStrategy):
                 orderCount = self.getBuyCount(nowPrice);
                 if orderCount > 0:
                     result = self.sendOrder({
+                        "sScrNo"     : "3021",
                         "nOrderType" : 1,
                         "sCode"      : myStock["stockCode"],
                         "nQty"       : orderCount,
@@ -219,6 +232,7 @@ class MyStrategy(AbstractStrategy):
                     pass;
             else:
                 result = self.sendOrder({
+                    "sScrNo"    : "3001",
                     "nOrderType": 2,
                     "sCode"     : myStock["stockCode"    ],
                     "nQty"      : myStock["reminingCount"],
@@ -239,6 +253,7 @@ class MyStrategy(AbstractStrategy):
         myStock = next(myStocks, None);
         while myStock != None:
             result = self.sendOrder({
+                "sScrNo"    : "3002",
                 "nOrderType": 2,
                 "sCode"     : myStock["stockCode"    ],
                 "nQty"      : myStock["reminingCount"],
@@ -269,6 +284,7 @@ class MyStrategy(AbstractStrategy):
                 #매도주문
                 result = self.parent.sendOrder({
                     "sAccNo"     : self.parent.gbMyAccount.uValue1.currentData(),
+                    "sScrNo"     : order["sScrNo"    ],#화면번호
                     "nOrderType" : order["nOrderType"],#주문유형 1:신규매수, 2:신규매도 3:매수취소, 4:매도취소, 5:매수정정, 6:매도정정
                     "sCode"      : order["sCode"     ],#종목코드
                     "nQty"       : order["nQty"      ],#주문수량
@@ -288,6 +304,7 @@ class MyStrategy(AbstractStrategy):
                 #매수주문
                 result = self.parent.sendOrder({
                     "sAccNo"     : self.parent.gbMyAccount.uValue1.currentData(),
+                    "sScrNo"     : order["sScrNo"    ],#화면번호
                     "nOrderType" : order["nOrderType"],#주문유형 1:신규매수, 2:신규매도 3:매수취소, 4:매도취소, 5:매수정정, 6:매도정정
                     "sCode"      : order["sCode"     ],#종목코드
                     "nQty"       : order["nQty"      ],#주문수량

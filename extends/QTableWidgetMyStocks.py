@@ -43,6 +43,19 @@ class QTableWidgetMyStocks(QtWidgets.QTableWidget):
         else:
             self.keyCol  = keyCol[0];
         
+        for column in columns:
+            if column.get("align", "") == "":
+                if column["type"] in [int, float]:
+                    column["align"] = QtCore.Qt.AlignRight;
+                else:
+                    column["align"] = QtCore.Qt.AlignLeft;
+            
+            if column.get("formatter", "") == "":
+                if column["type"] in [int, float]:
+                    column["formatter"] = "{0:,}";
+                else:
+                    column["formatter"] = "{0}";
+                
         self.columns = columns;
         self.bgCol   = bgCol[0] if len(bgCol) != 0 else None;
 
@@ -114,9 +127,9 @@ class QTableWidgetMyStocks(QtWidgets.QTableWidget):
                         value = self.getDataColValue(col, data);
 
                         if col["type"] != QtWidgets.QPushButton:
-                            iCol = QTableWidgetItemExtend((col.get("formatter", "{0}")).format(value));
+                            iCol = QTableWidgetItemExtend(col["formatter"].format(value));
                             iCol.setData(QtCore.Qt.UserRole, value);
-                            iCol.setTextAlignment(QtCore.Qt.AlignVCenter | col.get("align", QtCore.Qt.AlignHCenter));
+                            iCol.setTextAlignment(QtCore.Qt.AlignVCenter | col["align"]);
                             iCol.setForeground(QtGui.QBrush(QtGui.QColor(bgColor)));
                             self.setItem(rowNum, idx, iCol);
                         else:
@@ -129,7 +142,7 @@ class QTableWidgetMyStocks(QtWidgets.QTableWidget):
                     for idx, col in enumerate(self.columns):
                         value = self.getDataColValue(col, data);
                         if col["type"] != QtWidgets.QPushButton:
-                            self.item(isExist.row(), idx).setText((col.get("formatter", "{0}")).format(value));
+                            self.item(isExist.row(), idx).setText(col["formatter"].format(value));
                             self.item(isExist.row(), idx).setData(QtCore.Qt.UserRole, value);
                             self.item(isExist.row(), idx).setForeground(QtGui.QBrush(QtGui.QColor(bgColor)));
                         

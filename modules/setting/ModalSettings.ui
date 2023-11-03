@@ -997,7 +997,7 @@
          <string/>
         </property>
         <property name="maximum">
-         <number>10</number>
+         <number>99</number>
         </property>
         <property name="value">
          <number>10</number>

@@ -25,27 +25,27 @@ class ModalInformation(QtWidgets.QDialog, uic.loadUiType(resource_path("modules/
     
     def initTableWidget(self):
         self.twReOrderStocks.initWidget([
-            {"id": "stockCode", "name": "종목코드", "type": str                  , "formatter": "{0:}"  , "align": QtCore.Qt.AlignRight, "isKey" : True},
-            {"id": "stockName", "name": "종목명"  , "type": str                  , "formatter": "{0:}"  , "align": QtCore.Qt.AlignLeft},
-            {"id": "btnDel"   , "name": "삭제"    , "type": QtWidgets.QPushButton, "formatter": "{0:}"  , "align": QtCore.Qt.AlignLeft, "slot": self.delReOrder},
+            {"id": "stockCode", "name": "종목코드", "type": str, "isKey" : True},
+            {"id": "stockName", "name": "종목명"  , "type": str},
+            {"id": "btnDel"   , "name": "삭제"    , "type": QtWidgets.QPushButton, "slot": self.delReOrder},
         ]);
         
         #현재가, TrailingStop 보존가, 다음분할매도가, 다음분할매수가
         self.twMyStrategyStocks.initWidget([
-            {"id": "stockCode"     , "name": "종목코드"        , "type": str , "formatter": "{0:}" , "align": QtCore.Qt.AlignRight, "isKey" : True},
-            {"id": "stockName"     , "name": "종목명"          , "type": str , "formatter": "{0:}" , "align": QtCore.Qt.AlignLeft},
-            {"id": "nowPrice"      , "name": "현재가"          , "type": int , "formatter": "{0:,}", "align": QtCore.Qt.AlignRight},
-            {"id": "averagePrice"  , "name": "매입단가"        , "type": int , "formatter": "{0:,}", "align": QtCore.Qt.AlignRight},
-            {"id": "tsActive"      , "name": "[TS]활성여부"    , "type": bool, "formatter": "{0:}" , "align": QtCore.Qt.AlignCenter},
-            {"id": "tsHighPrice"   , "name": "[TS]최고가"      , "type": int , "formatter": "{0:,}", "align": QtCore.Qt.AlignRight},
-            {"id": "tsServePrice"  , "name": "[TS]이익보존가"  , "type": int , "formatter": "{0:,}", "align": QtCore.Qt.AlignRight},
-            {"id": "tsDivSell"     , "name": "[TS]분할매도(회)", "type": int , "formatter": "{0:}" , "align": QtCore.Qt.AlignRight},
-            {"id": "tsDivSellPrice", "name": "[TS]다음매도가"  , "type": int , "formatter": "{0:,}", "align": QtCore.Qt.AlignRight},
-            {"id": "tsAddBuy"      , "name": "[TS]분할매수(회)", "type": int , "formatter": "{0:}" , "align": QtCore.Qt.AlignRight},
-            {"id": "tsAddBuyPrice" , "name": "[TS]다음매수가"  , "type": int , "formatter": "{0:,}", "align": QtCore.Qt.AlignRight},
-            {"id": "slAddBuy"      , "name": "[SL]분할매수(회)", "type": int , "formatter": "{0:}" , "align": QtCore.Qt.AlignRight},
-            {"id": "slAddBuyPrice" , "name": "[SL]다음매수가"  , "type": int , "formatter": "{0:,}", "align": QtCore.Qt.AlignRight},
-            {"id": "bgCol"         , "name": "배경색"          , "type": int , "formatter": "{0:}" , "align": QtCore.Qt.AlignRight, "isBg": True, "isVisible": False},
+            {"id": "stockCode"     , "name": "종목코드"        , "type": str, "isKey" : True},
+            {"id": "stockName"     , "name": "종목명"          , "type": str},
+            {"id": "nowPrice"      , "name": "현재가"          , "type": int},
+            {"id": "averagePrice"  , "name": "매입단가"        , "type": int},
+            {"id": "tsActive"      , "name": "[TS]활성여부"    , "type": bool, "align": QtCore.Qt.AlignCenter},
+            {"id": "tsHighPrice"   , "name": "[TS]최고가"      , "type": int},
+            {"id": "tsServePrice"  , "name": "[TS]이익보존가"  , "type": int},
+            {"id": "tsDivSell"     , "name": "[TS]분할매도(회)", "type": int},
+            {"id": "tsDivSellPrice", "name": "[TS]다음매도가"  , "type": int},
+            {"id": "tsAddBuy"      , "name": "[TS]분할매수(회)", "type": int},
+            {"id": "tsAddBuyPrice" , "name": "[TS]다음매수가"  , "type": int},
+            {"id": "slAddBuy"      , "name": "[SL]분할매수(회)", "type": int},
+            {"id": "slAddBuyPrice" , "name": "[SL]다음매수가"  , "type": int},
+            {"id": "bgCol"         , "name": "배경색"          , "type": int, "isBg": True, "isVisible": False},
         ]);
 
     #재매수금지 삭제버튼 슬롯
