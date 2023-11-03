@@ -143,7 +143,6 @@ class ModalSetting(QtWidgets.QDialog, uic.loadUiType(resource_path("modules/sett
                 self.myStrategy[key]["tsHighPrice"] = 0;
                 self.myStrategy[key]["tsDivSell"  ] = 0;
             self.settings.setValue("myStrategy", self.myStrategy);
-            self.settings.sync();
         
         self.vAccountPlusEnd.setEnabled(self.vAccountPlusEndActive.isChecked());
         self.vAccountMinusEnd.setEnabled(self.vAccountMinusEndActive.isChecked());
@@ -200,8 +199,6 @@ class ModalSetting(QtWidgets.QDialog, uic.loadUiType(resource_path("modules/sett
         self.settings.setValue("STOP_LOSS/vslTargetLoss"              , self.vslTargetLoss.value());
         self.settings.setValue("STOP_LOSS/vslTouchDivideBuyActive"    , self.vslTouchDivideBuyActive.isChecked());
         self.settings.setValue("STOP_LOSS/vslTouchDivideBuy"          , self.vslTouchDivideBuy.value());
-        
-        self.settings.sync();
     
     #설정값 변경
     def changeValue(self):

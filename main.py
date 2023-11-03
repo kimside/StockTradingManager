@@ -99,7 +99,6 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
         self.apiMsgSignal.connect(self.addConsoleSlot);
         self.loginSignal.connect(self.isLoginSlot);
         self.chejanSignal.connect(self.addChejanSlot);
-        self.cancelSignal.connect(self.orderCancelSlot);
 
         self.btnConMax.clicked.connect(lambda: self.setSplitterSlot("con"));
         self.btnMiddle.clicked.connect(lambda: self.setSplitterSlot("mid"));
@@ -129,6 +128,18 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
         #icon = self.style().standardIcon(QtWidgets.QStyle.SP_TrashIcon);
         #self.systray.setIcon(icon);
         #self.systray.show();
+        self.appSettings.myStrategy["999999"] = {
+            "stockCode"   : "999999",
+            "stockName"   : "테스트종목",
+            "nowPrice"    : 1000,
+            "averagePrice": 1000,
+            "tsActive"    : False,
+            "tsHighPrice" : 0,
+            "tsDivSell"   : 0,
+            "tsAddBuy"    : 0,
+            "slAddBuy"    : 0,
+        };
+        self.appSettings.setValue("myStrategy", self.appSettings.myStrategy);
 
         if datetime.datetime.now().strftime("%H%M") < "1600":
             self.showDownTimer = QtCore.QTimer();
@@ -136,29 +147,8 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
             self.showDownTimer.timeout.connect(self.shutdown);
             self.showDownTimer.start();
 
-        if self.appSettings.__getattribute__("vAutoLogin"):
+        if self.appSettings.vAutoLogin:
             self.actLoginSlot();
-    
-    #주문취소 적용
-    def orderCancelSlot(self, obj):
-        """
-        3001: 신규매수,
-        3002: 신규매도,
-        3011: TrailingStop(매수) 손실 추가매수,
-        3012: TrailingStop(매도) 수익달성,
-        3013: TrailingStop(매도) 수익보존,
-        3014: TrailingStop(매도) 손실 전량매도,
-        3021: StopLoss(매수) 손실 추가매수,
-        3022: StopLoss(매도) 수익달성,
-        3023: StopLoss(매도) 손실 전량매도,
-        """
-        #cancelOrder = self.twChejanStocks.getRowDatas(obj["orderNo"]);
-        #for chejanHis in self.twChejanHisStocks.getRowDatas():
-        #   if chejanHis["orderNo"] == cancelOrder["oriOrderNo"]:
-        #       
-        print(datetime.datetime.now(), "orderCancelSlot");
-        if obj["sScrNo"] == "3001":
-            pass;
     
     #텔레그램 메세지 발송
     async def sendMessage(self, telegramMsg): #실행시킬 함수명 임의지정
@@ -234,7 +224,8 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
             {"id": "missCount"   , "name": "미체결수량", "type": int},
             {"id": "chejanGb"    , "name": "매매구분"  , "type": str, "align": QtCore.Qt.AlignCenter},
             {"id": "oriOrderNo"  , "name": "원주문번호", "type": str},
-            {"id": "bgCol"       , "name": "배경색"    , "type": int, "isBg": True, "isVisible": False},
+            {"id": "screenNo"    , "name": "화면번호"  , "type": str, "isVisible": False},
+            {"id": "bgCol"       , "name": "배경색"    , "type": int, "isVisible": False, "isBg": True},
         ]);
         self.twChejanStocks.sortItems(0, QtCore.Qt.DescendingOrder);
 
@@ -251,7 +242,8 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
             {"id": "missCount"   , "name": "미체결수량", "type": int},
             {"id": "chejanGb"    , "name": "매매구분"  , "type": str, "align": QtCore.Qt.AlignCenter},
             {"id": "oriOrderNo"  , "name": "원주문번호", "type": str},
-            {"id": "bgCol"       , "name": "배경색"    , "type": int, "isBg": True, "isVisible": False},
+            {"id": "screenNo"    , "name": "화면번호"  , "type": str, "isVisible": False},
+            {"id": "bgCol"       , "name": "배경색"    , "type": int, "isVisible": False, "isBg": True},
         ]);
         self.twChejanHisStocks.sortItems(1, QtCore.Qt.DescendingOrder);    
 
@@ -463,16 +455,15 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
                 for chejan in chejanStocks:
                     self.setRealReg("7000", chejan["stockCode"]);
 
-                myStrategys = list(self.appSettings.myStrategy.items());
-                if len(myStrategys) != 0:
-                    for key, strategy in myStrategys:
+                if len(self.appSettings.myStrategy.items()) != 0:
+                    for key, strategy in list(self.appSettings.myStrategy.items()):
                         if self.twMyStocks.isExist(key) == None:
+                            print(key);
                             del(self.appSettings.myStrategy[key]);
                         else:
                             for row in self.twMyStocks.getRowDatas(key):
                                 strategy["nowPrice"]     = row["nowPrice"];
                                 strategy["averagePrice"] = row["averagePrice"];
-                        self.appSettings.setValue("myStrategy", self.appSettings.myStrategy);
                 else:
                     for myStocks in self.twMyStocks.getRowDatas():
                         thisStock = myStocks.copy();
@@ -487,8 +478,6 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
                             "tsAddBuy"    : 0,
                             "slAddBuy"    : 0,
                         };
-                    self.appSettings.setValue("myStrategy", self.appSettings.myStrategy);
-                self.appSettings.sync();
             else:
                 if type(accountInfo) == int:
                     QtWidgets.QMessageBox.warning(self, "경고", self.getErrMsg(-10003 if accountInfo == -202 else accountInfo));
@@ -593,6 +582,7 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
                 "missCount"  : obj["f902" ], #미체결수량
                 "chejanGb"   : obj["f906" ], #매매구분(보통)
                 "oriOrderNo" : obj["f904" ], #원주문번호
+                "screenNo"   : obj["f920" ], #화면번호
                 "bgCol"      : 1 if obj["f905"] == "+매수" else -1, #매수/매도 배경색 구분
             };
             
@@ -649,23 +639,25 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
                     self.twChejanStocks.addRows(chejanStock);
                 
             elif chejan["hogaGb"] == "매수취소":
+                """
+                3001: 신규매수,
+                3011: TrailingStop(매수) 손실 추가매수,
+                3021: StopLoss(매수) 손실 추가매수,
+                """
                 #개발사항: 매수 취소시..  전략부분 원복... 근디.. 최초 매수인지, 추가매수인지 모르는디.. 어떻게 확인 처리하지??
-                if chejan["stockCode"] in self.appSettings.myStrategy:#존재한다면.. 기존에 손실 추가매수 항목
-                    if self.appSettings.currentTab == 0:#TrailingStop
-                        if self.appSettings.myStrategy[chejan["stockCode"]]["tsAddBuy"] > 0:
-                            self.appSettings.myStrategy[chejan["stockCode"]]["tsAddBuy"] -= 1;
-                            self.appSettings.setValue("myStrategy", self.appSettings.myStrategy);
-                    else:
-                        if self.appSettings.myStrategy[chejan["stockCode"]]["slAddBuy"] > 0:
-                            self.appSettings.myStrategy[chejan["stockCode"]]["slAddBuy"] -= 1;
-                            self.appSettings.setValue("myStrategy", self.appSettings.myStrategy);
-                else:#존재하지 않는다면.. 최초 매수 항목(재매수금지항목에서 제거)
+                if chejan["screenNo"] == "3001":
                     self.appSettings.orderList.remove((chejan["stockCode"], chejan["stockName"]));
-                    self.appSettings.setValue("orderList", self.appSettings.orderList);
+                elif chejan["screenNo"] == "3011":
+                    if self.appSettings.myStrategy[chejan["stockCode"]]["tsAddBuy"] > 0:
+                        self.appSettings.myStrategy[chejan["stockCode"]]["tsAddBuy"] -= 1;
+                elif chejan["scrennNo"] == "3021":
+                    if self.appSettings.myStrategy[chejan["stockCode"]]["slAddBuy"] > 0:
+                        self.appSettings.myStrategy[chejan["stockCode"]]["slAddBuy"] -= 1;
 
                 #원주문번호를 찾아 해당 주문건을 삭제한다.
                 self.twChejanStocks.delRows(chejan["oriOrderNo"]);
                 
+                #체결잔고 실시간정보 수신해제 여부
                 isFound = False;
                 for c in self.twChejanStocks.getRowDatas():
                     if c["stockCode"] == chejan["stockCode"] and c["orderNo"] != chejan["oriOrderNo"]:
@@ -676,16 +668,22 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
                     self.setRealRemove("7000", chejan["stockCode"]);
             
             elif chejan["hogaGb"] == "매도취소":
+                """
+                3012: TrailingStop(매도) 수익달성,
+                3013: TrailingStop(매도) 수익보존,
+                3014: TrailingStop(매도) 손실 전량매도,
+                3022: StopLoss(매도) 수익달성,
+                3023: StopLoss(매도) 손실 전량매도,
+                """
                 #개발사항: 매도 취소시..  전략부분 원복... 근디.. 수익 매도인지, 손실매도인지 모르는디.. 어떻게 확인 처리하지??
-                if chejan["stockCode"] in self.appSettings.myStrategy:
-                    myStrategy = self.appSettings.myStrategy[chejan["stockCode"]];
-                    if self.appSettings.currentTab == 0:#TrailingStop
-                        if chejan["nowPrice"] < myStrategy["averagePrice"] and myStrategy["tsAddSell"] > 0:#매입단가가 현재가 보다 높다면 수익매도
-                            self.appSettings.myStrategy[chejan["stockCode"]]["tsAddSell"] -= 1;
-                            self.appSettings.setValue("myStrategy", self.appSettings.myStrategy);
+                if chejan["screenNo"] in ["3012", "3013", "3014"]:
+                    if self.appSettings.myStrategy[chejan["stockCode"]]["tsAddSell"] > 0:
+                        self.appSettings.myStrategy[chejan["stockCode"]]["tsAddSell"] -= 1;
+                elif chejan["screenNo"] in ["3022", "3023"]:
+                    if self.appSettings.myStrategy[chejan["stockCode"]]["slAddSell"] > 0:
+                        self.appSettings.myStrategy[chejan["stockCode"]]["slAddSell"] -= 1;
                 
-                #계좌 보유주식 주문가능수량 업데이트
-                #부분 체결이 되었을수도 있기에..  확인해야한다.
+                #계좌 보유주식 주문가능수량 업데이트(부분 체결이 되었을수도 있기에..  확인해야한다.)
                 myStocks = self.twMyStocks.getRowDatas(chejan["stockCode"]);
 
                 for myStock in myStocks:
@@ -696,6 +694,8 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
                 
                 #원주문번호를 찾아 해당 주문건을 삭제한다.
                 self.twChejanStocks.delRows(chejan["oriOrderNo"]);
+
+                #체결잔고 실시간정보 수신해제 여부
                 isFound = False;
                 for c in self.twChejanStocks.getRowDatas():
                     if c["stockCode"] == chejan["stockCode"] and c["orderNo"] != chejan["oriOrderNo"]:
@@ -715,7 +715,8 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
 
                     if chejan["missCount"] == "0":#미체결수량
                         self.twChejanStocks.delRows(chejan["orderNo"]);
-
+                        
+                        #체결잔고 실시간정보 수신해제 여부
                         isFound = False;
                         for c in self.twChejanStocks.getRowDatas():
                             if c["stockCode"] == chejan["stockCode"] and c["orderNo"] != chejan["orderNo"]:
@@ -750,8 +751,6 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
                                 #계좌잔고가 남아 있지 않다면 전략에서도 삭제
                                 if chejan["stockCode"] in self.appSettings.myStrategy:
                                     del(self.appSettings.myStrategy[chejan["stockCode"]]);
-                                    self.appSettings.setValue("myStrategy", self.appSettings.myStrategy);
-                                    #self.appSettings.sync();
                             else:
                                 myStock["stockCount"] = reminingCount;
                                 self.twMyStocks.addRows(self.calcStock(myStock));
@@ -759,6 +758,7 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
                     if chejan["missCount"] == "0":#미체결수량
                         self.twChejanStocks.delRows(chejan["orderNo"]);
                         
+                        #체결잔고 실시간정보 수신해제 여부
                         isFound = False;
                         for c in self.twChejanStocks.getRowDatas():
                             if c["stockCode"] == chejan["stockCode"] and c["orderNo"] != chejan["orderNo"]:

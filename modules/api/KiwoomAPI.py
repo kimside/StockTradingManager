@@ -14,7 +14,6 @@ class KiwoomAPI(LogMaker, metaclass=Singleton):
     stockSignal    = QtCore.pyqtSignal(object);
     apiMsgSignal   = QtCore.pyqtSignal(object);
     chejanSignal   = QtCore.pyqtSignal(object);
-    cancelSignal   = QtCore.pyqtSignal(object);
 
     ##생성자
     def __init__(self, parent=None, **kwargs):
@@ -256,18 +255,13 @@ class KiwoomAPI(LogMaker, metaclass=Singleton):
                 if self.onReceiveTrDataLoop.isRunning():
                     self.onReceiveTrDataLoop.exit();
         else:
-            if sTrCode in ["KOA_NORMAL_KP_CANCEL", "KOA_NORMAL_KQ_CANCEL"]:
-                obj = {
-                    "sScrNo" : sScrNo,
-                    "sRQName": sRQName,
-                    "sTrCode": sTrCode,
-                    "orderNo": self.api.dynamicCall("GetCommData(QString, QString, int, QString)", sTrCode, sRQName, 0, "field").strip(),
-                }
+            obj = {
+                "sScrNo" : sScrNo,
+                "sRQName": sRQName,
+                "sTrCode": sTrCode,
+                "orderNo": self.api.dynamicCall("GetCommData(QString, QString, int, QString)", sTrCode, sRQName, 0, "field").strip(),
+            }
                 
-                #주문번호가 비어있다면 오류가 발생한 주문으로 처리하지 않음
-                if obj["orderNo"] != "":
-                    self.cancelSignal.emit(obj);
-    
     #조건검색목록 요청처리
     def getConditionLoad(self):
         self.api.dynamicCall("GetConditionLoad()");
@@ -364,7 +358,7 @@ class KiwoomAPI(LogMaker, metaclass=Singleton):
     #conName,  //조건식 이름
     #conId,    //조건 고유번호
     def onReceiveRealCondition(self, sCode, sType, sConName, sConId):
-        masterCodeName  = self.api.dynamicCall("GetMasterCodeName(QString)", sCode);
+        masterCodeName  = self.api.dynamicCall("GetMasterCodeName(QString)" , sCode);
         masterLastPrice = self.api.dynamicCall("GetMasterLastPrice(QString)", sCode); 
         
         self.conInOutSignal.emit({
@@ -440,8 +434,6 @@ class KiwoomAPI(LogMaker, metaclass=Singleton):
             self.sScrNoList[sScrNo] = [sScrNo];
         
         for stockCode in sCodeList.split(";"):
-            hasScrNo = False;
-
             isRegister = False;
             for scr in self.sScrNoList[sScrNo]:
                 isRegister = (scr, stockCode) in self.realReceiveList;
@@ -459,16 +451,7 @@ class KiwoomAPI(LogMaker, metaclass=Singleton):
 
                 self.api.dynamicCall("SetRealReg(QString, QString, QString, QString)", saveScrNo, stockCode, sFidList, sOptType);
                 self.realReceiveList.add((sScrNo, stockCode));
-            """
-            for tp in self.realReceiveList:
-                if sScrNo == tp[0]:
-                    hasScrNo = True;
-                    break;
-            
-            sOptType = "1" if hasScrNo else "0";
-            self.api.dynamicCall("SetRealReg(QString, QString, QString, QString)", sScrNo, stockCode, sFidList, sOptType);
-            self.realReceiveList.add((sScrNo, stockCode));
-            """
+           
     #실시간 데이터 요청 삭제처리(SetRealReg로 등록한 대상만 해제 가능)
     #(CommRqData, CommKwRqData등 상세정보 호출과 동시에 실시간 수신하는 항목은 sScrNo전체를 비워줘야 함 SetRealRemove("화면번호","ALL"))
     #sScrNo,   // 화면 번호
@@ -481,17 +464,11 @@ class KiwoomAPI(LogMaker, metaclass=Singleton):
                     self.realReceiveList = self.realReceiveList.difference(removeTargets);
                     self.api.dynamicCall("SetRealRemove(QString, QString)", s, sDelCode);
                 del(self.sScrNoList[sScrNo]);
-                #removeTargets = set(list((scrNo, stockCode) for scrNo, stockCode in self.realReceiveList if sScrNo == scrNo));
-                #self.realReceiveList = self.realReceiveList.difference(removeTargets);
             else:
                 for s in self.sScrNoList[sScrNo]:
                     if (s, sDelCode) in self.realReceiveList:
                         self.realReceiveList.remove((s, sDelCode));
                         self.api.dynamicCall("SetRealRemove(QString, QString)", sScrNo, sDelCode);
-                #if (sScrNo, sDelCode) in self.realReceiveList:
-                #    self.realReceiveList.remove((sScrNo, sDelCode));
-
-        #self.api.dynamicCall("SetRealRemove(QString, QString)", sScrNo, sDelCode);
             
     #전체 또는 화면번호 내 실시간 데이터 요청 삭제
     #sScrNo, // 화면번호
@@ -1077,13 +1054,6 @@ class KiwoomAPI(LogMaker, metaclass=Singleton):
                 "f920"  : sScrNo,
                 "reason": reason,
             });
-
-            #if not self.onReceiveTrDataLoop.isRunning():
-            #    self.onReceiveTrDataLoop.exec_();
-            
-            #print(self.trOutput);
-            #result = self.trOutput;
-
         else:
             self.apiMsgSignal.emit({
                 "sScrNo" : sScrNo,
@@ -1098,7 +1068,7 @@ class KiwoomAPI(LogMaker, metaclass=Singleton):
                 "msg"   : ("{0}({1})를 {2}({3})주를 {4} 신청 오류가 발생하였습니다.({5})").format(masterCodeName, sCode, nPrice, nQty, self.nOrderType[nOrderType], self.errCodes[result]),
             });
 
-            #self.trOutput = None;
+            result = -1;
         
         return result;
     

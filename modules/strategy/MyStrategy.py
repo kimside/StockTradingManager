@@ -29,7 +29,7 @@ class MyStrategy(AbstractStrategy):
                 thisStrategy = self.conStrategy[obj["f9001"]];
             
                 #재매수금지 대상에 포함되지 않음
-                #매수최대갯수를 넘지 않음 and len(self.appSettings.orderList) <= self.appSettings.vTradeMaxCount \
+                #매수최대갯수를 넘지 않음
                 #계좌보유주식 목록에 없음
                 #순간체결강도 집계 목록이 30개 넘음
                 #순간체결강도가 150이상
@@ -74,21 +74,32 @@ class MyStrategy(AbstractStrategy):
     
     #주문취소
     def orderCancel(self, stock):
+        """
+        3001: 신규매수,
+        3002: 신규매도,
+        3011: TrailingStop(매수) 손실 추가매수,
+        3012: TrailingStop(매도) 수익달성,
+        3013: TrailingStop(매도) 수익보존,
+        3014: TrailingStop(매도) 손실 전량매도,
+        3021: StopLoss(매수) 손실 추가매수,
+        3022: StopLoss(매도) 수익달성,
+        3023: StopLoss(매도) 손실 전량매도,
+        """
         result = -1;
         #접수인 상태에서는 주문수량을 취소하고, 체결 상태에서는 미체결 수량을 취소한다.
         nQty = stock["missCount"] if stock["missCount"] != 0 else stock["orderCount"];
         if nQty != 0:
             result = self.sendOrder({
                 "nOrderType" : 3 if stock["hogaGb"] == "+매수" else 4,
+                "sScrNo"     : stock["screenNo"  ],
                 "sCode"      : stock["stockCode" ],#주문유형 1:신규매수, 2:신규매도 3:매수취소, 4:매도취소, 5:매수정정, 6:매도정정
                 "nQty"       : stock["missCount" ] if stock["missCount"] != 0 else stock["orderCount"],#미체결수량만큼 취소한다.
                 "nPrice"     : stock["nowPrice"  ],
-                "reason"     : "미체결 대기시간 초과 주문취소({0})".format(stock["hogaGb"]),
                 "sOrgOrderNo": stock["orderNo"   ],
+                "reason"     : "미체결 대기시간 초과 주문취소({0})".format(stock["hogaGb"]),
             }, stock);
-            #print("미체결 대기시간 초과 주문취소 {0}({1}) {2} (result:{3})".format(stock["stockName"], stock["stockCode"], stock["hogaGb"], result));
         else:
-            #print("미체결 대기시간 초과 주문취소 수량 확인 {0}({1}) {2} (수량:{3})".format(stock["stockName"], stock["stockCode"], stock["hogaGb"], nQty));
+            print("미체결 대기시간 초과 주문취소 수량 확인 {0}({1}) {2} (수량:{3})".format(stock["stockName"], stock["stockCode"], stock["hogaGb"], nQty));
             result = -1;
         return result;
     
@@ -189,10 +200,6 @@ class MyStrategy(AbstractStrategy):
                                          self.appSettings.vtsTouchDivideBuy < myStrategy.get("tsAddBuy") else
                                       "TrailingStop 손실매도",
                     }, myStock);
-        self.appSettings.myStrategy[myStock["stockCode"]] = myStrategy;
-        self.appSettings.setValue("myStrategy", self.appSettings.myStrategy);
-        #속도가 너무 느리다
-        #self.appSettings.sync();
     
     #스탑로스
     def stopLoss(self, obj, myStock):
@@ -242,11 +249,7 @@ class MyStrategy(AbstractStrategy):
                                      self.appSettings.vslTouchDivideBuy < myStrategy.get("slAddBuy") else
                                   "StopLoss 손실매도",
                 }, myStock);
-        self.appSettings.myStrategy[myStock["stockCode"]] = myStrategy;
-        self.appSettings.setValue("myStrategy", self.appSettings.myStrategy);
-        #속도가 너무 느리다
-        #self.appSettings.sync();
-    
+        
     #계좌 보유주식 일괄매도
     def stockSellAll(self):
         myStocks = iter(self.parent.twMyStocks.getRowDatas());    
@@ -317,11 +320,7 @@ class MyStrategy(AbstractStrategy):
                     #근데... 신청결과에서는 잔고부족이나, 기타 다른 오류는 확인이 불가한데... 이거 신청만 되고 체결이 안되면..
                     #그냥 재매수 금지항목에만 등록되는건데. 뭐 다른 방법이 없나???
                     if order["reason"] == "조건검색 신규 매수":
-                        #신규매수항목임
                         self.appSettings.orderList.add((stock["stockCode"], stock["stockName"]));
-                        self.appSettings.setValue("orderList", self.appSettings.orderList);
-                        #속도가 너무느리다
-                        #self.appSettings.sync();
                 elif result == -308:
                     time.sleep(0.25);
             
@@ -399,9 +398,6 @@ class MyStrategy(AbstractStrategy):
                             myStrategy["tsHighPrice"] = nowPrice;
                 myStrategy["nowPrice"    ] = nowPrice;
                 myStrategy["averagePrice"] = myStock["averagePrice"];
-                self.appSettings.setValue("myStrategy", self.appSettings.myStrategy);
-                #속도가 너무 느리다
-                #self.appSettings.sync();
             else:
                 self.appSettings.myStrategy[myStock["stockCode"]] = {
                     "stockCode"   : myStock["stockCode"   ],
@@ -414,6 +410,4 @@ class MyStrategy(AbstractStrategy):
                     "tsAddBuy"    : 0,
                     "slAddBuy"    : 0,
                 };
-                self.appSettings.setValue("myStrategy", self.appSettings.myStrategy);
-                #속도가 너무느리다
-                #self.appSettings.sync();
+

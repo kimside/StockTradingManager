@@ -53,13 +53,12 @@ class ModalInformation(QtWidgets.QDialog, uic.loadUiType(resource_path("modules/
         datas = self.twReOrderStocks.getRowDatas(key);
         for data in datas:
             self.appSettings.orderList.remove((data["stockCode"], data["stockName"]));
-            self.appSettings.setValue("orderList", self.appSettings.orderList);
-            self.appSettings.sync();
         self.twReOrderStocks.delRows(key);
     
     #모달창 Show 이벤트
     def showEvent(self, event):
-        self.twReOrderStocks.setRowCount(0);
+        self.tableWidgetClear();
+        
         for (stockCode, stockName) in self.appSettings.orderList:
             self.twReOrderStocks.addRows({
                 "stockCode": stockCode,
@@ -148,8 +147,6 @@ class ModalInformation(QtWidgets.QDialog, uic.loadUiType(resource_path("modules/
         if reply == QtWidgets.QMessageBox.Yes:
             self.twReOrderStocks.setRowCount(0);
             self.appSettings.orderList.clear();
-            self.appSettings.setValue("orderList", self.appSettings.orderList);
-            self.appSettings.sync();
             QtWidgets.QMessageBox.about(self, "재매수금지 목록 초기화", "재매수금지 목록이 초기화 되었습니다");
     
     #전체 그리드 초기화
