@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>780</width>
-    <height>692</height>
+    <width>774</width>
+    <height>569</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -936,7 +936,7 @@ p, li { white-space: pre-wrap; }
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>780</width>
+     <width>774</width>
      <height>21</height>
     </rect>
    </property>
@@ -1018,6 +1018,9 @@ p, li { white-space: pre-wrap; }
   <action name="actTestCode">
    <property name="text">
     <string>TestCode</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+T</string>
    </property>
   </action>
  </widget>

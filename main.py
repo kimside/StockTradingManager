@@ -23,7 +23,7 @@ from modules.setting.ModalSettings      import ModalSetting;
 from modules.setting.ModalInformation   import ModalInformation;
 from modules.test.TestChejan0           import TestChejan0;
 from modules.test.TestChejan1           import TestChejan1;
-from modules.test.TestCode              import TestCode;
+from modules.test.TestCode              import TestCode, MyThread;
 from modules.setting.entity.Settings    import Settings;
 from modules.strategy.MyStrategy        import MyStrategy;
 
@@ -99,7 +99,7 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
         self.apiMsgSignal.connect(self.addConsoleSlot);
         self.loginSignal.connect(self.isLoginSlot);
         self.chejanSignal.connect(self.addChejanSlot);
-
+        
         self.btnConMax.clicked.connect(lambda: self.setSplitterSlot("con"));
         self.btnMiddle.clicked.connect(lambda: self.setSplitterSlot("mid"));
         self.btnMyMax.clicked.connect(lambda : self.setSplitterSlot("my"));
@@ -122,24 +122,32 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
         self.tbConsole.addAction(historyClear)
 
         self.pageNavigation.setVisible(False);
-
+        
         #TrayIcon 설정
         #self.systray = QtWidgets.QSystemTrayIcon(self);
         #icon = self.style().standardIcon(QtWidgets.QStyle.SP_TrashIcon);
         #self.systray.setIcon(icon);
         #self.systray.show();
-        self.appSettings.myStrategy["999999"] = {
-            "stockCode"   : "999999",
-            "stockName"   : "테스트종목",
-            "nowPrice"    : 1000,
-            "averagePrice": 1000,
-            "tsActive"    : False,
-            "tsHighPrice" : 0,
-            "tsDivSell"   : 0,
-            "tsAddBuy"    : 0,
-            "slAddBuy"    : 0,
-        };
-        self.appSettings.setValue("myStrategy", self.appSettings.myStrategy);
+        
+        #self.appSettings.myStrategy["999999"] = {
+        #    "stockCode"   : "999999",
+        #    "stockName"   : "테스트종목",
+        #    "nowPrice"    : 1000,
+        #    "averagePrice": 1000,
+        #    "tsActive"    : False,
+        #    "tsHighPrice" : 0,
+        #    "tsDivSell"   : 0,
+        #    "tsAddBuy"    : 0,
+        #    "slAddBuy"    : 0,
+        #};
+        #self.appSettings.setValue("myStrategy", self.appSettings.myStrategy);
+
+        self.logFile = open(file="logging/" + datetime.datetime.now().strftime("%Y%m%d") + "/stress_" + datetime.datetime.now().strftime("%Y%m%d") + ".log", mode="a", encoding="UTF-8", );
+        print("buffer", self.logFile.buffer);
+        
+        self.myThread = MyThread(self);
+        self.myThread.tSignal.connect(self.stockSignalSlot);
+        self.myThread.start();
 
         if datetime.datetime.now().strftime("%H%M") < "1600":
             self.showDownTimer = QtCore.QTimer();
@@ -180,7 +188,10 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
         
     #자식창 팝업 슬롯
     def showModalSlot(self, modalId):
-        self.__getattribute__(modalId).exec_();
+        if modalId == "testCode":
+            self.__getattribute__(modalId).show();
+        else:
+            self.__getattribute__(modalId).exec_();
     
     #TableWdiget 컬럼 초기화
     def initTableWidget(self):
@@ -451,9 +462,8 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
                 self.twChejanStocks.delRows(removeList);
                 
                 #미체결 항목은 실시간 데이터 수신하도록 추가함(화면번호: 7000)
-                chejanStocks = self.twChejanStocks.getRowDatas();
-                for chejan in chejanStocks:
-                    self.setRealReg("7000", chejan["stockCode"]);
+                chejanStocks = self.twChejanStocks.getColumnDatas("stockCode");
+                self.setRealReg("7000", ";".join(chejanStocks));
 
                 if len(self.appSettings.myStrategy.items()) != 0:
                     for key, strategy in list(self.appSettings.myStrategy.items()):
@@ -466,12 +476,12 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
                                 strategy["averagePrice"] = row["averagePrice"];
                 else:
                     for myStocks in self.twMyStocks.getRowDatas():
-                        thisStock = myStocks.copy();
-                        self.appSettings.myStrategy[thisStock["stockCode"]] = {
-                            "stockCode"   : thisStock["stockCode"   ],
-                            "stockName"   : thisStock["stockName"   ],
-                            "nowPrice"    : thisStock["nowPrice"    ],
-                            "averagePrice": thisStock["averagePrice"],
+                        copyStock = myStocks.copy();
+                        self.appSettings.myStrategy[copyStock["stockCode"]] = {
+                            "stockCode"   : copyStock["stockCode"   ],
+                            "stockName"   : copyStock["stockName"   ],
+                            "nowPrice"    : copyStock["nowPrice"    ],
+                            "averagePrice": copyStock["averagePrice"],
                             "tsActive"    : False,
                             "tsHighPrice" : 0,
                             "tsDivSell"   : 0,
@@ -488,6 +498,73 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
     
     #실시간 수신 데이터 Grid에 반영
     def stockSignalSlot(self, obj):
+        writeText =  "[{0}:{1}]"          .format(datetime.datetime.now(), "buySellPrice");
+        writeText += ", 주문번호({0})"    .format(self.preFormat(obj["sRealType"],  7, "<"));
+        writeText += ", 주문번호({0})"    .format(self.preFormat(obj["f9001"    ],  7, "<"));
+        writeText += ", 종목명({0})"      .format(self.preFormat(obj["f302"     ], 20, "<"));
+        writeText += ", 종목코드({0})"    .format(self.preFormat(obj["f307"     ],  6, ">"));
+        writeText += ", 매매구분({0})"    .format(self.preFormat(obj["f920"     ],  8, ">"));
+        writeText += ", 주문가격({0})"    .format(self.preFormat(obj["f20"      ],  7, ">"));
+        writeText += ", 주문수량({0})"    .format(self.preFormat(obj["f10"      ],  7, ">"));
+        writeText += ", 체결수량({0})"    .format(self.preFormat(obj["f11"      ],  3, ">"));
+        writeText += ", 단위체결가({0})"  .format(self.preFormat(obj["f12"      ],  7, ">"));
+        writeText += ", 단위체결량({0})"  .format(self.preFormat(obj["f27"      ],  7, ">"));
+        writeText += ", 주문번호({0})"    .format(self.preFormat(obj["f28"      ],  7, "<"));
+        writeText += ", 종목명({0})"      .format(self.preFormat(obj["f15"      ], 20, "<"));
+        writeText += ", 종목코드({0})"    .format(self.preFormat(obj["f13"      ],  6, ">"));
+        writeText += ", 매매구분({0})"    .format(self.preFormat(obj["f14"      ],  8, ">"));
+        writeText += ", 주문가격({0})"    .format(self.preFormat(obj["f16"      ],  7, ">"));
+        writeText += ", 주문수량({0})"    .format(self.preFormat(obj["f17"      ],  7, ">"));
+        writeText += ", 체결수량({0})"    .format(self.preFormat(obj["f18"      ],  3, ">"));
+        writeText += ", 단위체결가({0})"  .format(self.preFormat(obj["f25"      ],  7, ">"));
+        writeText += ", 단위체결량({0})"  .format(self.preFormat(obj["f26"      ],  7, ">"));
+        writeText += ", 주문번호({0})"    .format(self.preFormat(obj["f29"      ],  7, "<"));
+        writeText += ", 종목명({0})"      .format(self.preFormat(obj["f30"      ], 20, "<"));
+        writeText += ", 종목코드({0})"    .format(self.preFormat(obj["f31"      ],  6, ">"));
+        writeText += ", 매매구분({0})"    .format(self.preFormat(obj["f32"      ],  8, ">"));
+        writeText += ", 주문가격({0})"    .format(self.preFormat(obj["f228"     ],  7, ">"));
+        writeText += ", 주문수량({0})"    .format(self.preFormat(obj["f311"     ],  7, ">"));
+        writeText += ", 체결수량({0})"    .format(self.preFormat(obj["f290"     ],  3, ">"));
+        writeText += ", 단위체결가({0})"  .format(self.preFormat(obj["f691"     ],  7, ">"));
+        writeText += ", 단위체결량({0})"  .format(self.preFormat(obj["f567"     ],  7, ">"));
+        writeText += ", 주문번호({0})"    .format(self.preFormat(obj["f568"     ],  7, "<"));
+        writeText += ", 종목명({0})"      .format(self.preFormat(obj["f851"     ], 20, "<"));
+        #self.logFile.write(writeText + "\n");
+
+        #with open(file="logging/" + datetime.datetime.now().strftime("%Y%m%d") + "/stress_" + datetime.datetime.now().strftime("%Y%m%d") + ".log", mode="a", encoding="UTF-8") as fileData:
+            #writeText =  "[{0}:{1}]"          .format(datetime.datetime.now(), "buySellPrice");
+            #writeText += ", 주문번호({0})"    .format(self.preFormat(obj["sRealType"],  7, "<"));
+            #writeText += ", 주문번호({0})"    .format(self.preFormat(obj["f9001"    ],  7, "<"));
+            #writeText += ", 종목명({0})"      .format(self.preFormat(obj["f302"     ], 20, "<"));
+            #writeText += ", 종목코드({0})"    .format(self.preFormat(obj["f307"     ],  6, ">"));
+            #writeText += ", 매매구분({0})"    .format(self.preFormat(obj["f920"     ],  8, ">"));
+            #writeText += ", 주문가격({0})"    .format(self.preFormat(obj["f20"      ],  7, ">"));
+            #writeText += ", 주문수량({0})"    .format(self.preFormat(obj["f10"      ],  7, ">"));
+            #writeText += ", 체결수량({0})"    .format(self.preFormat(obj["f11"      ],  3, ">"));
+            #writeText += ", 단위체결가({0})"  .format(self.preFormat(obj["f12"      ],  7, ">"));
+            #writeText += ", 단위체결량({0})"  .format(self.preFormat(obj["f27"      ],  7, ">"));
+            #writeText += ", 주문번호({0})"    .format(self.preFormat(obj["f28"      ],  7, "<"));
+            #writeText += ", 종목명({0})"      .format(self.preFormat(obj["f15"      ], 20, "<"));
+            #writeText += ", 종목코드({0})"    .format(self.preFormat(obj["f13"      ],  6, ">"));
+            #writeText += ", 매매구분({0})"    .format(self.preFormat(obj["f14"      ],  8, ">"));
+            #writeText += ", 주문가격({0})"    .format(self.preFormat(obj["f16"      ],  7, ">"));
+            #writeText += ", 주문수량({0})"    .format(self.preFormat(obj["f17"      ],  7, ">"));
+            #writeText += ", 체결수량({0})"    .format(self.preFormat(obj["f18"      ],  3, ">"));
+            #writeText += ", 단위체결가({0})"  .format(self.preFormat(obj["f25"      ],  7, ">"));
+            #writeText += ", 단위체결량({0})"  .format(self.preFormat(obj["f26"      ],  7, ">"));
+            #writeText += ", 주문번호({0})"    .format(self.preFormat(obj["f29"      ],  7, "<"));
+            #writeText += ", 종목명({0})"      .format(self.preFormat(obj["f30"      ], 20, "<"));
+            #writeText += ", 종목코드({0})"    .format(self.preFormat(obj["f31"      ],  6, ">"));
+            #writeText += ", 매매구분({0})"    .format(self.preFormat(obj["f32"      ],  8, ">"));
+            #writeText += ", 주문가격({0})"    .format(self.preFormat(obj["f228"     ],  7, ">"));
+            #writeText += ", 주문수량({0})"    .format(self.preFormat(obj["f311"     ],  7, ">"));
+            #writeText += ", 체결수량({0})"    .format(self.preFormat(obj["f290"     ],  3, ">"));
+            #writeText += ", 단위체결가({0})"  .format(self.preFormat(obj["f691"     ],  7, ">"));
+            #writeText += ", 단위체결량({0})"  .format(self.preFormat(obj["f567"     ],  7, ">"));
+            #writeText += ", 주문번호({0})"    .format(self.preFormat(obj["f568"     ],  7, "<"));
+            #writeText += ", 종목명({0})"      .format(self.preFormat(obj["f851"     ], 20, "<"));
+            #fileData.write(writeText + "\n");
+        
         sScrNoList = obj["f920"].split(";") \
                      if "f920" in obj else  \
                      [];
@@ -498,8 +575,8 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
                 for myStock in self.twMyStocks.getRowDatas(obj["f9001"]):
                     myStock["nowPrice"] = obj["f10"];
                     self.twMyStocks.addRows(self.calcStock(myStock));
-                    self.modalInformation.updateNowPrice(myStock);
-                    self.updateSummary();
+                    #self.modalInformation.updateNowPrice(myStock);
+                self.updateSummary();
             
             #미체결 잔고 현재가 업데이트
             if "7000" in sScrNoList:
@@ -599,15 +676,8 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
             if not chejan["hogaGb"] in ["매수취소", "매도취소", "매수정정", "매도정정"]:
                 #에코 데이터.. 주문정정, 주문취소시.. +매수, -매도 마지막 데이터를 에코형식으로 다시 전송해준다..
                 #(현재 주문번호가 chejanHis에 원주문번호에 존재한다면 무시해야함)
-                delayEcho = False;#지연된 [-매도, +매수] 수신정보여부
-                for chejanHis in self.twChejanHisStocks.getRowDatas():
-                    if chejanHis["oriOrderNo"] == chejan["orderNo"]:
-                        delayEcho = True;
-                        break;
-                
-                if not delayEcho:
+                if not chejan["orderNo"] in self.twChejanHisStocks.getColumnDatas("oriOrderNo"):
                     self.twChejanStocks.addRows(chejan);
-            
             self.twChejanHisStocks.addRows(chejan);
 
             #매수/매도 처리 후, 수신 데이터에 미체결 수량이 없다면.. 미체결 잔고 QTableWidget에서 해당 행 삭제
@@ -657,16 +727,6 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
                 #원주문번호를 찾아 해당 주문건을 삭제한다.
                 self.twChejanStocks.delRows(chejan["oriOrderNo"]);
                 
-                #체결잔고 실시간정보 수신해제 여부
-                isFound = False;
-                for c in self.twChejanStocks.getRowDatas():
-                    if c["stockCode"] == chejan["stockCode"] and c["orderNo"] != chejan["oriOrderNo"]:
-                        isFound = True;
-                        break;
-                
-                if not isFound:
-                    self.setRealRemove("7000", chejan["stockCode"]);
-            
             elif chejan["hogaGb"] == "매도취소":
                 """
                 3012: TrailingStop(매도) 수익달성,
@@ -695,16 +755,6 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
                 #원주문번호를 찾아 해당 주문건을 삭제한다.
                 self.twChejanStocks.delRows(chejan["oriOrderNo"]);
 
-                #체결잔고 실시간정보 수신해제 여부
-                isFound = False;
-                for c in self.twChejanStocks.getRowDatas():
-                    if c["stockCode"] == chejan["stockCode"] and c["orderNo"] != chejan["oriOrderNo"]:
-                        isFound = True;
-                        break;
-                
-                if not isFound:
-                    self.setRealRemove("7000", chejan["stockCode"]);
-        
             elif chejan["orderStatus"] == "체결":
                 accountInfo = self.gbMyAccount.getAccountInfo();
 
@@ -715,16 +765,6 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
 
                     if chejan["missCount"] == "0":#미체결수량
                         self.twChejanStocks.delRows(chejan["orderNo"]);
-                        
-                        #체결잔고 실시간정보 수신해제 여부
-                        isFound = False;
-                        for c in self.twChejanStocks.getRowDatas():
-                            if c["stockCode"] == chejan["stockCode"] and c["orderNo"] != chejan["orderNo"]:
-                                isFound = True;
-                                break;
-                        
-                        if not isFound:
-                            self.setRealRemove("7000", chejan["stockCode"]);
                 
                 elif chejan["hogaGb"] == "-매도":
                     self.gbMyAccount.setAccountInfo({
@@ -758,16 +798,10 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
                     if chejan["missCount"] == "0":#미체결수량
                         self.twChejanStocks.delRows(chejan["orderNo"]);
                         
-                        #체결잔고 실시간정보 수신해제 여부
-                        isFound = False;
-                        for c in self.twChejanStocks.getRowDatas():
-                            if c["stockCode"] == chejan["stockCode"] and c["orderNo"] != chejan["orderNo"]:
-                                isFound = True;
-                                break;
-                        
-                        if not isFound:
-                            self.setRealRemove("7000", chejan["stockCode"]);
-                
+            #체결잔고 실시간정보 수신해제 여부
+            if not chejan["stockCode"] in self.twChejanStocks.getColumnDatas("stockCode"):
+                self.setRealRemove("7000", chejan["stockCode"]);    
+            
             #테스트를 위한 로그기록
             testLogFile(chejan, tradeStock, self.gbMyAccount.vOrderableAmount.text());
         
@@ -915,26 +949,21 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
     
     #계좌요약정보 업데이트
     def updateSummary(self):
-        totalBuyAmount = 0;
-        totalNowAmount = 0;
-
-        myStockDataList = self.twMyStocks.getRowDatas();
-        for myStockData in myStockDataList:
-            totalBuyAmount += myStockData.get("buyAmount", 0);
-            totalNowAmount += myStockData.get("nowAmount", 0);
+        totalBuyAmount = sum(self.twMyStocks.getColumnDatas("buyAmount"));
+        totalNowAmount = sum(self.twMyStocks.getColumnDatas("nowAmount"));
         
         self.gbMyAccount.setAccountInfo({
             "vTotalBuyAmount" : totalBuyAmount,
             "vTotalNowAmount" : totalNowAmount,
         });
-
+        
         vTotalProfit     = totalNowAmount - totalBuyAmount;
         vTotalProfitRate = vTotalProfit / totalBuyAmount * 100;
 
         #계좌 당일 손실/수익종료, 당일청산 설정에 따른 자동매매 종료
         if (self.appSettings.vAccountPlusEndActive  and self.gbMyAccount.vTodayProfitRate >= self.appSettings.vAccountPlusEnd ) or \
-            (self.appSettings.vAccountMinusEndActive and self.gbMyAccount.vTodayProfitRate <= self.appSettings.vAccountMinusEnd) or \
-            (self.appSettings.vDayClearActive        and self.appSettings.vRunEndTime.toString("hhmm") < datetime.datetime.now().strftime("%H%M")):
+           (self.appSettings.vAccountMinusEndActive and self.gbMyAccount.vTodayProfitRate <= self.appSettings.vAccountMinusEnd) or \
+           (self.appSettings.vDayClearActive        and self.appSettings.vRunEndTime.toString("hhmm") < datetime.datetime.now().strftime("%H%M")):
             
             self.gbMyAccount.uValue1.setEnabled(True);
             self.cbConUp.setEnabled(True);
@@ -958,7 +987,7 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
                 QtWidgets.QMitemsessageBox.about(self, "계좌", "계좌 손실율에 도달하여 자동매매를 종료합니다.");
             else:
                 QtWidgets.QMessageBox.about(self, "계좌", "당일 청산 자동매매를 종료합니다.");
-    
+        
     #조건검색 항목 편입/탈락 처리
     def conInOutSlot(self, obj):
         if obj["type"] == "D":#종목이탈
@@ -978,8 +1007,6 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
         msg += ", {0}".format(self.preFormat(obj["sRQName"] if obj["sRQName"] != "" else obj["sTrCode"], 30, "<"));
         msg += ", {0}".format(obj["sMsg"]);
         
-        if obj["sScrNo"] == "3001":
-            pass;
         self.tbConsole.append(msg);
         self.statusbar.showMessage(msg, 5000);
     

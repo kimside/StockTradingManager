@@ -30,13 +30,5 @@ class BaseEntity(object):
         return json.dumps(self.__dict__, ensure_ascii = False);
 
 if __name__ == "__main__":
-    orderType = {
-        1: "신규매수",
-        2: "신규매도",
-        3: "매수취소",
-        4: "매도취소",
-        5: "매수정정",
-        6: "매도정정",
-        7: None,
-    };
-    print(orderType.get(7, "TEST"));
+    s = set([("1","A"), ("2","A"), ("3","A"), ("4","A")]);
+    print(list(s)[0][0]);

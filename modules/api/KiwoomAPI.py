@@ -945,6 +945,7 @@ class KiwoomAPI(LogMaker, metaclass=Singleton):
             obj["f10034"] = self.api.dynamicCall("GetCommRealData(QString, int)", sCode, 10034); #???
         
         elif sRealType == "시간외종목정보":
+            obj["rType"] = "18";
             obj["f10297"] = self.api.dynamicCall("GetCommRealData(QString, int)", sCode, 10297); #???
             obj["f10305"] = self.api.dynamicCall("GetCommRealData(QString, int)", sCode, 10304); #???
             obj["f10306"] = self.api.dynamicCall("GetCommRealData(QString, int)", sCode, 10306); #???

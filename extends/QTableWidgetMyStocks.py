@@ -99,6 +99,17 @@ class QTableWidgetMyStocks(QtWidgets.QTableWidget):
 
         return rowDatas;
 
+    #열전체 데이터 조회
+    def getColumnDatas(self, colId):
+        colDatas = [];
+        colIdx = self.getColumnIdx(colId);
+        
+        if colIdx != None:
+            for row in range(self.rowCount()):
+                colDatas.append(self.item(row, colIdx).data(QtCore.Qt.UserRole));
+                                
+        return colDatas;
+
     #정렬되어 있는 상태로 추가/수정 시 첫 Column은 이상이 없지만 두번째 컬럼 부터는 정렬안된 index값에 적용되는 경우가 있어
     #추가/수정시.. 먼저 정렬을 풀고, 로직 처리 후 다시 정렬을 활성화 하면 된다.
     def addRows(self, datas):
@@ -142,9 +153,10 @@ class QTableWidgetMyStocks(QtWidgets.QTableWidget):
                     for idx, col in enumerate(self.columns):
                         value = self.getDataColValue(col, data);
                         if col["type"] != QtWidgets.QPushButton:
-                            self.item(isExist.row(), idx).setText(col["formatter"].format(value));
-                            self.item(isExist.row(), idx).setData(QtCore.Qt.UserRole, value);
-                            self.item(isExist.row(), idx).setForeground(QtGui.QBrush(QtGui.QColor(bgColor)));
+                            iCol = self.item(isExist.row(), idx);
+                            iCol.setText(col["formatter"].format(value));
+                            iCol.setData(QtCore.Qt.UserRole, value);
+                            iCol.setForeground(QtGui.QBrush(QtGui.QColor(bgColor)));
                         
             
             self.setSortingEnabled(True);
