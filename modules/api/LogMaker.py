@@ -1,7 +1,8 @@
-import os, json, time, datetime, unicodedata;
+import os, json, time, datetime, unicodedata, sqlite3;
 
 class LogMaker:
     def __init__(self, parent=None, **kwargs):
+
         self.today_YYYYMMDD = datetime.datetime.now().strftime("%Y%m%d");
         self.logChejanDir = "logging/{0}/chejan/".format(self.today_YYYYMMDD);
         os.makedirs(os.path.dirname(self.logChejanDir), exist_ok=True);
@@ -17,41 +18,40 @@ class LogMaker:
 
         self.logKiwoomDir = "logging/{0}/kiwoom/".format(self.today_YYYYMMDD);
         os.makedirs(os.path.dirname(self.logKiwoomDir), exist_ok=True);
+
+        self.logConditionFile  = self.createTable("logging/{0}/{1}/{2}.db".format(self.today_YYYYMMDD, "condition", "onReceiveRealCondition"));
+        self.logKiwoomFile     = self.createTable("logging/{0}/{1}/{2}.db".format(self.today_YYYYMMDD, "kiwoom"   , "onReceiveMsg"          ));
         
-        self.logConditionFile  = open(file="logging/{0}/{1}/{2}.log".format(self.today_YYYYMMDD, "condition", "onReceiveRealCondition"), mode="a", encoding="UTF-8");
-        self.logKiwoomFile     = open(file="logging/{0}/{1}/{2}.log".format(self.today_YYYYMMDD, "kiwoom"   , "onReceiveMsg"          ), mode="a", encoding="UTF-8");
+        self.logSendOrderFile1 = self.createTable("logging/{0}/{1}/{2}.db".format(self.today_YYYYMMDD, "order"    , "sendOrder(신규매수)"));
+        self.logSendOrderFile2 = self.createTable("logging/{0}/{1}/{2}.db".format(self.today_YYYYMMDD, "order"    , "sendOrder(신규매도)"));
+        self.logSendOrderFile3 = self.createTable("logging/{0}/{1}/{2}.db".format(self.today_YYYYMMDD, "order"    , "sendOrder(매수취소)"));
+        self.logSendOrderFile4 = self.createTable("logging/{0}/{1}/{2}.db".format(self.today_YYYYMMDD, "order"    , "sendOrder(매도취소)"));
         
-        self.logSendOrderFile1 = open(file="logging/{0}/{1}/{2}.log".format(self.today_YYYYMMDD, "order"    , "sendOrder(신규매수)"   ), mode="a", encoding="UTF-8");
-        self.logSendOrderFile2 = open(file="logging/{0}/{1}/{2}.log".format(self.today_YYYYMMDD, "order"    , "sendOrder(신규매도)"   ), mode="a", encoding="UTF-8");
-        self.logSendOrderFile3 = open(file="logging/{0}/{1}/{2}.log".format(self.today_YYYYMMDD, "order"    , "sendOrder(매수취소)"   ), mode="a", encoding="UTF-8");
-        self.logSendOrderFile4 = open(file="logging/{0}/{1}/{2}.log".format(self.today_YYYYMMDD, "order"    , "sendOrder(매도취소)"   ), mode="a", encoding="UTF-8");
+        self.logRealFile01     = self.createTable("logging/{0}/{1}/{2}.db".format(self.today_YYYYMMDD, "real"      , "onReceiveRealData(주식시세)"       ));
+        self.logRealFile02     = self.createTable("logging/{0}/{1}/{2}.db".format(self.today_YYYYMMDD, "real"      , "onReceiveRealData(주식체결)"       ));
+        self.logRealFile03     = self.createTable("logging/{0}/{1}/{2}.db".format(self.today_YYYYMMDD, "real"      , "onReceiveRealData(주식우선호가)"   ));
+        self.logRealFile04     = self.createTable("logging/{0}/{1}/{2}.db".format(self.today_YYYYMMDD, "real"      , "onReceiveRealData(주식호가잔량)"   ));
+        self.logRealFile05     = self.createTable("logging/{0}/{1}/{2}.db".format(self.today_YYYYMMDD, "real"      , "onReceiveRealData(주식시간외호가)" ));
+        self.logRealFile06     = self.createTable("logging/{0}/{1}/{2}.db".format(self.today_YYYYMMDD, "real"      , "onReceiveRealData(주식당일거래원)" ));
+        self.logRealFile07     = self.createTable("logging/{0}/{1}/{2}.db".format(self.today_YYYYMMDD, "real"      , "onReceiveRealData(장시작시간)"     ));
+        self.logRealFile08     = self.createTable("logging/{0}/{1}/{2}.db".format(self.today_YYYYMMDD, "real"      , "onReceiveRealData(주식예상체결)"   ));
+        self.logRealFile09     = self.createTable("logging/{0}/{1}/{2}.db".format(self.today_YYYYMMDD, "real"      , "onReceiveRealData(주식종목정보)"   ));
+        self.logRealFile10     = self.createTable("logging/{0}/{1}/{2}.db".format(self.today_YYYYMMDD, "real"      , "onReceiveRealData(업종지수)"       ));
+        self.logRealFile11     = self.createTable("logging/{0}/{1}/{2}.db".format(self.today_YYYYMMDD, "real"      , "onReceiveRealData(업종등락)"       ));
+        self.logRealFile12     = self.createTable("logging/{0}/{1}/{2}.db".format(self.today_YYYYMMDD, "real"      , "onReceiveRealData(VI발동_해제)"    ));
+        self.logRealFile13     = self.createTable("logging/{0}/{1}/{2}.db".format(self.today_YYYYMMDD, "real"      , "onReceiveRealData(주문체결)"       ));
+        self.logRealFile14     = self.createTable("logging/{0}/{1}/{2}.db".format(self.today_YYYYMMDD, "real"      , "onReceiveRealData(잔고)"           ));
+        self.logRealFile15     = self.createTable("logging/{0}/{1}/{2}.db".format(self.today_YYYYMMDD, "real"      , "onReceiveRealData(종목프로그램매매)"));
+        self.logRealFile16     = self.createTable("logging/{0}/{1}/{2}.db".format(self.today_YYYYMMDD, "real"      , "onReceiveRealData(ECN주식체결)"    ));
+        self.logRealFile17     = self.createTable("logging/{0}/{1}/{2}.db".format(self.today_YYYYMMDD, "real"      , "onReceiveRealData(ECN주식호가잔량)" ));
+        self.logRealFile18     = self.createTable("logging/{0}/{1}/{2}.db".format(self.today_YYYYMMDD, "real"      , "onReceiveRealData(시간외종목정보)"  ));
+        self.logRealFile99     = self.createTable("logging/{0}/{1}/{2}.db".format(self.today_YYYYMMDD, "real"      , "onReceiveRealData(기타)"           ));
         
-        self.logRealFile01     = open(file="logging/{0}/{1}/{2}.log".format(self.today_YYYYMMDD, "real"      , "onReceiveRealData(주식시세)"        ), mode="a", encoding="UTF-8");
-        self.logRealFile02     = open(file="logging/{0}/{1}/{2}.log".format(self.today_YYYYMMDD, "real"      , "onReceiveRealData(주식체결)"        ), mode="a", encoding="UTF-8");
-        self.logRealFile03     = open(file="logging/{0}/{1}/{2}.log".format(self.today_YYYYMMDD, "real"      , "onReceiveRealData(주식우선호가)"    ), mode="a", encoding="UTF-8");
-        self.logRealFile04     = open(file="logging/{0}/{1}/{2}.log".format(self.today_YYYYMMDD, "real"      , "onReceiveRealData(주식호가잔량)"    ), mode="a", encoding="UTF-8");
-        self.logRealFile05     = open(file="logging/{0}/{1}/{2}.log".format(self.today_YYYYMMDD, "real"      , "onReceiveRealData(주식시간외호가)"  ), mode="a", encoding="UTF-8");
-        self.logRealFile06     = open(file="logging/{0}/{1}/{2}.log".format(self.today_YYYYMMDD, "real"      , "onReceiveRealData(주식당일거래원)"  ), mode="a", encoding="UTF-8");
-        self.logRealFile07     = open(file="logging/{0}/{1}/{2}.log".format(self.today_YYYYMMDD, "real"      , "onReceiveRealData(장시작시간)"      ), mode="a", encoding="UTF-8");
-        self.logRealFile08     = open(file="logging/{0}/{1}/{2}.log".format(self.today_YYYYMMDD, "real"      , "onReceiveRealData(주식예상체결)"    ), mode="a", encoding="UTF-8");
-        self.logRealFile09     = open(file="logging/{0}/{1}/{2}.log".format(self.today_YYYYMMDD, "real"      , "onReceiveRealData(주식종목정보)"    ), mode="a", encoding="UTF-8");
-        self.logRealFile10     = open(file="logging/{0}/{1}/{2}.log".format(self.today_YYYYMMDD, "real"      , "onReceiveRealData(업종지수)"        ), mode="a", encoding="UTF-8");
-        self.logRealFile11     = open(file="logging/{0}/{1}/{2}.log".format(self.today_YYYYMMDD, "real"      , "onReceiveRealData(업종등락)"        ), mode="a", encoding="UTF-8");
-        self.logRealFile12     = open(file="logging/{0}/{1}/{2}.log".format(self.today_YYYYMMDD, "real"      , "onReceiveRealData(VI발동_해제)"     ), mode="a", encoding="UTF-8");
-        self.logRealFile13     = open(file="logging/{0}/{1}/{2}.log".format(self.today_YYYYMMDD, "real"      , "onReceiveRealData(주문체결)"        ), mode="a", encoding="UTF-8");
-        self.logRealFile14     = open(file="logging/{0}/{1}/{2}.log".format(self.today_YYYYMMDD, "real"      , "onReceiveRealData(잔고)"            ), mode="a", encoding="UTF-8");
-        self.logRealFile15     = open(file="logging/{0}/{1}/{2}.log".format(self.today_YYYYMMDD, "real"      , "onReceiveRealData(종목프로그램매매)"), mode="a", encoding="UTF-8");
-        self.logRealFile16     = open(file="logging/{0}/{1}/{2}.log".format(self.today_YYYYMMDD, "real"      , "onReceiveRealData(ECN주식체결)"     ), mode="a", encoding="UTF-8");
-        self.logRealFile17     = open(file="logging/{0}/{1}/{2}.log".format(self.today_YYYYMMDD, "real"      , "onReceiveRealData(ECN주식호가잔량)" ), mode="a", encoding="UTF-8");
-        self.logRealFile18     = open(file="logging/{0}/{1}/{2}.log".format(self.today_YYYYMMDD, "real"      , "onReceiveRealData(시간외종목정보)"  ), mode="a", encoding="UTF-8");
-        self.logRealFile99     = open(file="logging/{0}/{1}/{2}.log".format(self.today_YYYYMMDD, "real"      , "onReceiveRealData(기타)"            ), mode="a", encoding="UTF-8");
-        
-        
-        self.logChejanFile01   = open(file="logging/{0}/{1}/{2}.log".format(self.today_YYYYMMDD, "chejan"    , "onReceiveChejanData(cheBuy)"        ), mode="a", encoding="UTF-8");
-        self.logChejanFile02   = open(file="logging/{0}/{1}/{2}.log".format(self.today_YYYYMMDD, "chejan"    , "onReceiveChejanData(cheSell)"       ), mode="a", encoding="UTF-8");
-        self.logChejanFile11   = open(file="logging/{0}/{1}/{2}.log".format(self.today_YYYYMMDD, "chejan"    , "onReceiveChejanData(janBuy)"        ), mode="a", encoding="UTF-8");
-        self.logChejanFile12   = open(file="logging/{0}/{1}/{2}.log".format(self.today_YYYYMMDD, "chejan"    , "onReceiveChejanData(janSell)"       ), mode="a", encoding="UTF-8");
-        self.logChejanFile99   = open(file="logging/{0}/{1}/{2}.log".format(self.today_YYYYMMDD, "chejan"    , "onReceiveChejanData(etc)"           ), mode="a", encoding="UTF-8");
+        self.logChejanFile01   = self.createTable("logging/{0}/{1}/{2}.db".format(self.today_YYYYMMDD, "chejan"    , "onReceiveChejanData(cheBuy)" ));
+        self.logChejanFile02   = self.createTable("logging/{0}/{1}/{2}.db".format(self.today_YYYYMMDD, "chejan"    , "onReceiveChejanData(cheSell)"));
+        self.logChejanFile11   = self.createTable("logging/{0}/{1}/{2}.db".format(self.today_YYYYMMDD, "chejan"    , "onReceiveChejanData(janBuy)" ));
+        self.logChejanFile12   = self.createTable("logging/{0}/{1}/{2}.db".format(self.today_YYYYMMDD, "chejan"    , "onReceiveChejanData(janSell)"));
+        self.logChejanFile99   = self.createTable("logging/{0}/{1}/{2}.db".format(self.today_YYYYMMDD, "chejan"    , "onReceiveChejanData(etc)"    ));
                                                                   
         self.nOrderType = {
             1: "신규매수",
@@ -436,7 +436,8 @@ class LogMaker:
         writeText = "[{0}:{1}]".format(datetime.datetime.now(), "onReceiveRealCondition");
         for key in obj:
             writeText += self.getFidLogText(key, obj[key]);
-        self.logConditionFile.write(writeText + "\n");
+        self.insertLog(self.logConditionFile, writeText);
+        
         """
         logFile = ("logging/{0}/{1}/{2}.log").format(self.today_YYYYMMDD, "condition", "onReceiveRealCondition");
         with open(logFile, "a", encoding="UTF-8", ) as fileData:
@@ -449,7 +450,7 @@ class LogMaker:
         writeText = "[{0}:{1}]".format(datetime.datetime.now(), "onReceiveMsg");
         for key in obj:
             writeText += self.getFidLogText(key, obj[key]);
-        self.logKiwoomFile.write(writeText + "\n");
+        self.insertLog(self.logKiwoomFile, writeText);
         """
         logFile = ("logging/{0}/{1}/{2}.log").format(self.today_YYYYMMDD, "kiwoom", "onReceiveMsg");
         with open(logFile, "a", encoding="UTF-8", ) as fileData:
@@ -465,13 +466,13 @@ class LogMaker:
             writeText += self.getFidLogText(key, obj[key]);
         
         if obj["f905"] == 1:
-            self.logSendOrderFile1.write(writeText + "\n");
+            self.insertLog(self.logSendOrderFile1, writeText);
         elif obj["f905"] == 2:
-            self.logSendOrderFile2.write(writeText + "\n");
+            self.insertLog(self.logSendOrderFile2, writeText);
         elif obj["f905"] == 3:
-            self.logSendOrderFile3.write(writeText + "\n");
+            self.insertLog(self.logSendOrderFile3, writeText);
         elif obj["f905"] == 4:
-            self.logSendOrderFile4.write(writeText + "\n");
+            self.insertLog(self.logSendOrderFile4, writeText);
         """
         fileDiv = "sendOrder({0})".format(self.nOrderType[obj["f905"]]);
         logFile = ("logging/{0}/{1}/{2}.log").format(self.today_YYYYMMDD, "order", fileDiv);
@@ -489,41 +490,43 @@ class LogMaker:
             writeText += self.getFidLogText(key, obj[key]);
 
         if obj["rType"] == 1:
-            self.logRealFile01.write(writeText + "\n");
+            self.insertLog(self.logRealFile01, writeText);
         elif obj["rType"] == 2:
-            self.logRealFile02.write(writeText + "\n");
+            self.insertLog(self.logRealFile02, writeText);
         elif obj["rType"] == 3:
-            self.logRealFile03.write(writeText + "\n");
+            self.insertLog(self.logRealFile03, writeText);
         elif obj["rType"] == 4:
-            self.logRealFile04.write(writeText + "\n");
+            self.insertLog(self.logRealFile04, writeText);
         elif obj["rType"] == 5:
-            self.logRealFile05.write(writeText + "\n");
+            self.insertLog(self.logRealFile05, writeText);
         elif obj["rType"] == 6:
-            self.logRealFile06.write(writeText + "\n");
+            self.insertLog(self.logRealFile06, writeText);
         elif obj["rType"] == 7:
-            self.logRealFile07.write(writeText + "\n");
+            self.insertLog(self.logRealFile07, writeText);
         elif obj["rType"] == 8:
-            self.logRealFile08.write(writeText + "\n");
+            self.insertLog(self.logRealFile08, writeText);
         elif obj["rType"] == 9:
-            self.logRealFile09.write(writeText + "\n");
+            self.insertLog(self.logRealFile09, writeText);
         elif obj["rType"] == 10:
-            self.logRealFile10.write(writeText + "\n");
+            self.insertLog(self.logRealFile10, writeText);
         elif obj["rType"] == 11:
-            self.logRealFile11.write(writeText + "\n");
+            self.insertLog(self.logRealFile11, writeText);
         elif obj["rType"] == 12:
-            self.logRealFile12.write(writeText + "\n");
+            self.insertLog(self.logRealFile12, writeText);
         elif obj["rType"] == 13:
-            self.logRealFile13.write(writeText + "\n");
+            self.insertLog(self.logRealFile13, writeText);
         elif obj["rType"] == 14:
-            self.logRealFile14.write(writeText + "\n");
+            self.insertLog(self.logRealFile14, writeText);
         elif obj["rType"] == 15:
-            self.logRealFile15.write(writeText + "\n");
+            self.insertLog(self.logRealFile15, writeText);
         elif obj["rType"] == 16:
-            self.logRealFile16.write(writeText + "\n");
+            self.insertLog(self.logRealFile16, writeText);
         elif obj["rType"] == 17:
-            self.logRealFile18.write(writeText + "\n");
+            self.insertLog(self.logRealFile17, writeText);
+        elif obj["rType"] == 18:
+            self.insertLog(self.logRealFile18, writeText);
         elif obj["rType"] == 99:
-            self.logRealFile99.write(writeText + "\n");
+            self.insertLog(self.logRealFile99, writeText);
         """
         fileDiv = "onReceiveRealData({0})".format(obj["sRealType"]);
         logFile = ("logging/{0}/{1}/{2}.log").format(self.today_YYYYMMDD, "real", fileDiv);
@@ -565,18 +568,18 @@ class LogMaker:
         
         if "gubun" in obj and obj["gubun"] == "0":
             if "f905" in obj and obj["f905"] == "+매수":#매수쳬결
-                self.logChejanFile01.write(writeText + "\n");
+                self.insertLog(self.logChejanFile01, writeText);
             elif "f905" in obj and obj["f905"] == "-매도":#매도체결
-                self.logChejanFile02.write(writeText + "\n");
+                self.insertLog(self.logChejanFile02, writeText);
             else:
-                self.logChejanFile99.write(writeText + "\n");
+                self.insertLog(self.logChejanFile99, writeText);
         elif "gubun" in obj and obj["gubun"] == "1":
             if "f946" in obj and obj["f946"] == "2":#매수 잔고변경
-                self.logChejanFile11.write(writeText + "\n");
+                self.insertLog(self.logChejanFile11, writeText);
             elif "f946" in obj and obj["f946"] == "1":#매도 잔고변경
-                self.logChejanFile12.write(writeText + "\n");
+                self.insertLog(self.logChejanFile12, writeText);
             else:
-                self.logChejanFile99.write(writeText + "\n");
+                self.insertLog(self.logChejanFile99, writeText);
         """
         logFile = ("logging/{0}/{1}/{2}.log").format(self.today_YYYYMMDD, "chejan", fileDiv);
         with open(logFile, "a", encoding="UTF-8", ) as fileData:
@@ -585,5 +588,54 @@ class LogMaker:
                 writeText += self.getFidLogText(key, obj[key]);
             fileData.writelines(writeText + "\n");
         """
+    def createTable(self, path):
+        conn = sqlite3.connect(path)
+        cursor = conn.cursor();
+        cursor.execute("PRAGMA synchronous = OFF");
+        cursor.execute("PRAGMA journal_mode = OFF");
+        cursor.execute("SELECT count(name) FROM sqlite_master WHERE type='table' AND name='LogTable';");
+
+        if cursor.fetchone()[0] != 1:
+            cursor.execute("CREATE TABLE LogTable (datetime text, logging text);");
+        
+        return conn;
+
+    def insertLog(self, conn, writeLog):
+        conn.cursor().execute("INSERT INTO LogTable VALUES(?, ?);", (datetime.datetime.now(), writeLog));
+
+    def closeAndCommitAll(self):
+        self.logConditionFile.commit();
+        self.logKiwoomFile.commit();
+        
+        self.logSendOrderFile1.commit();
+        self.logSendOrderFile2.commit();
+        self.logSendOrderFile3.commit();
+        self.logSendOrderFile4.commit();
+        
+        self.logRealFile01.commit();
+        self.logRealFile02.commit();
+        self.logRealFile03.commit();
+        self.logRealFile04.commit();
+        self.logRealFile05.commit();
+        self.logRealFile06.commit();
+        self.logRealFile07.commit();
+        self.logRealFile08.commit();
+        self.logRealFile09.commit();
+        self.logRealFile10.commit();
+        self.logRealFile11.commit();
+        self.logRealFile12.commit();
+        self.logRealFile13.commit();
+        self.logRealFile14.commit();
+        self.logRealFile15.commit();
+        self.logRealFile16.commit();
+        self.logRealFile17.commit();
+        self.logRealFile18.commit();
+        self.logRealFile99.commit();
+        
+        self.logChejanFile01.commit();
+        self.logChejanFile02.commit();
+        self.logChejanFile11.commit();
+        self.logChejanFile12.commit();
+        self.logChejanFile99.commit();
 if __name__ == "__main__":
     pass;

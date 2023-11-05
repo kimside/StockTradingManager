@@ -1,4 +1,5 @@
 import sys, os, datetime, ctypes, traceback, logging, time, telegram, asyncio;
+import sqlite3;
 
 from telegram import Update;
 from telegram.constants import ParseMode;
@@ -84,7 +85,7 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
         #self.appSettings.orderList.add(("001360", "삼성제약"));
         #self.appSettings.setValue("orderList", self.appSettings.orderList);
         #self.appSettings.sync();
-
+        self.nt = datetime.datetime.now().strftime("%H%M");
         self.btnRun.setEnabled(False);
         self.gbMyAccount.uValue1.setEnabled(False);
         self.cbConUp.setEnabled(False);
@@ -141,9 +142,6 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
         #    "slAddBuy"    : 0,
         #};
         #self.appSettings.setValue("myStrategy", self.appSettings.myStrategy);
-
-        self.logFile = open(file="logging/" + datetime.datetime.now().strftime("%Y%m%d") + "/stress_" + datetime.datetime.now().strftime("%Y%m%d") + ".log", mode="a", encoding="UTF-8", );
-        print("buffer", self.logFile.buffer);
         
         self.myThread = MyThread(self);
         self.myThread.tSignal.connect(self.stockSignalSlot);
@@ -181,6 +179,9 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
 
     #거래시간 이후 자동매매종료
     def shutdown(self):
+        #print(datetime.datetime.now(), datetime.datetime.now().strftime("%H%M"), str(int(self.nt) + 1));
+        #if datetime.datetime.now().strftime("%H%M") == str(int(self.nt) + 1):
+
         if datetime.datetime.now().strftime("%H%M") == "1600":
             self.myStrategy.isRun = False;
             self.showDownTimer.stop();
@@ -378,8 +379,8 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
                 };
 
                 #테스트를 위한 로그기록
-                testLogFile(opt10075);
-                testLogFile(opt10077);
+                #testLogFile(opt10075);
+                #testLogFile(opt10077);
 
                 for index, value in enumerate(opt10077.__getitem__("mField09")):
                     if value != "":
@@ -468,7 +469,6 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
                 if len(self.appSettings.myStrategy.items()) != 0:
                     for key, strategy in list(self.appSettings.myStrategy.items()):
                         if self.twMyStocks.isExist(key) == None:
-                            print(key);
                             del(self.appSettings.myStrategy[key]);
                         else:
                             for row in self.twMyStocks.getRowDatas(key):
@@ -498,73 +498,38 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
     
     #실시간 수신 데이터 Grid에 반영
     def stockSignalSlot(self, obj):
-        writeText =  "[{0}:{1}]"          .format(datetime.datetime.now(), "buySellPrice");
-        writeText += ", 주문번호({0})"    .format(self.preFormat(obj["sRealType"],  7, "<"));
-        writeText += ", 주문번호({0})"    .format(self.preFormat(obj["f9001"    ],  7, "<"));
-        writeText += ", 종목명({0})"      .format(self.preFormat(obj["f302"     ], 20, "<"));
-        writeText += ", 종목코드({0})"    .format(self.preFormat(obj["f307"     ],  6, ">"));
-        writeText += ", 매매구분({0})"    .format(self.preFormat(obj["f920"     ],  8, ">"));
-        writeText += ", 주문가격({0})"    .format(self.preFormat(obj["f20"      ],  7, ">"));
-        writeText += ", 주문수량({0})"    .format(self.preFormat(obj["f10"      ],  7, ">"));
-        writeText += ", 체결수량({0})"    .format(self.preFormat(obj["f11"      ],  3, ">"));
-        writeText += ", 단위체결가({0})"  .format(self.preFormat(obj["f12"      ],  7, ">"));
-        writeText += ", 단위체결량({0})"  .format(self.preFormat(obj["f27"      ],  7, ">"));
-        writeText += ", 주문번호({0})"    .format(self.preFormat(obj["f28"      ],  7, "<"));
-        writeText += ", 종목명({0})"      .format(self.preFormat(obj["f15"      ], 20, "<"));
-        writeText += ", 종목코드({0})"    .format(self.preFormat(obj["f13"      ],  6, ">"));
-        writeText += ", 매매구분({0})"    .format(self.preFormat(obj["f14"      ],  8, ">"));
-        writeText += ", 주문가격({0})"    .format(self.preFormat(obj["f16"      ],  7, ">"));
-        writeText += ", 주문수량({0})"    .format(self.preFormat(obj["f17"      ],  7, ">"));
-        writeText += ", 체결수량({0})"    .format(self.preFormat(obj["f18"      ],  3, ">"));
-        writeText += ", 단위체결가({0})"  .format(self.preFormat(obj["f25"      ],  7, ">"));
-        writeText += ", 단위체결량({0})"  .format(self.preFormat(obj["f26"      ],  7, ">"));
-        writeText += ", 주문번호({0})"    .format(self.preFormat(obj["f29"      ],  7, "<"));
-        writeText += ", 종목명({0})"      .format(self.preFormat(obj["f30"      ], 20, "<"));
-        writeText += ", 종목코드({0})"    .format(self.preFormat(obj["f31"      ],  6, ">"));
-        writeText += ", 매매구분({0})"    .format(self.preFormat(obj["f32"      ],  8, ">"));
-        writeText += ", 주문가격({0})"    .format(self.preFormat(obj["f228"     ],  7, ">"));
-        writeText += ", 주문수량({0})"    .format(self.preFormat(obj["f311"     ],  7, ">"));
-        writeText += ", 체결수량({0})"    .format(self.preFormat(obj["f290"     ],  3, ">"));
-        writeText += ", 단위체결가({0})"  .format(self.preFormat(obj["f691"     ],  7, ">"));
-        writeText += ", 단위체결량({0})"  .format(self.preFormat(obj["f567"     ],  7, ">"));
-        writeText += ", 주문번호({0})"    .format(self.preFormat(obj["f568"     ],  7, "<"));
-        writeText += ", 종목명({0})"      .format(self.preFormat(obj["f851"     ], 20, "<"));
-        #self.logFile.write(writeText + "\n");
+        #writeText =  "[{0}:{1}]"          .format(datetime.datetime.now(), "buySellPrice");
+        #writeText += ", 주문번호({0})"    .format(self.preFormat(obj["sRealType"],  7, "<"));
+        #writeText += ", 주문번호({0})"    .format(self.preFormat(obj["f9001"    ],  7, "<"));
+        #writeText += ", 종목명({0})"      .format(self.preFormat(obj["f302"     ], 20, "<"));
+        #writeText += ", 종목코드({0})"    .format(self.preFormat(obj["f307"     ],  6, ">"));
+        #writeText += ", 매매구분({0})"    .format(self.preFormat(obj["f920"     ],  8, ">"));
+        #writeText += ", 주문가격({0})"    .format(self.preFormat(obj["f20"      ],  7, ">"));
+        #writeText += ", 주문수량({0})"    .format(self.preFormat(obj["f10"      ],  7, ">"));
+        #writeText += ", 체결수량({0})"    .format(self.preFormat(obj["f11"      ],  3, ">"));
+        #writeText += ", 단위체결가({0})"  .format(self.preFormat(obj["f12"      ],  7, ">"));
+        #writeText += ", 단위체결량({0})"  .format(self.preFormat(obj["f27"      ],  7, ">"));
+        #writeText += ", 주문번호({0})"    .format(self.preFormat(obj["f28"      ],  7, "<"));
+        #writeText += ", 종목명({0})"      .format(self.preFormat(obj["f15"      ], 20, "<"));
+        #writeText += ", 종목코드({0})"    .format(self.preFormat(obj["f13"      ],  6, ">"));
+        #writeText += ", 매매구분({0})"    .format(self.preFormat(obj["f14"      ],  8, ">"));
+        #writeText += ", 주문가격({0})"    .format(self.preFormat(obj["f16"      ],  7, ">"));
+        #writeText += ", 주문수량({0})"    .format(self.preFormat(obj["f17"      ],  7, ">"));
+        #writeText += ", 체결수량({0})"    .format(self.preFormat(obj["f18"      ],  3, ">"));
+        #writeText += ", 단위체결가({0})"  .format(self.preFormat(obj["f25"      ],  7, ">"));
+        #writeText += ", 단위체결량({0})"  .format(self.preFormat(obj["f26"      ],  7, ">"));
+        #writeText += ", 주문번호({0})"    .format(self.preFormat(obj["f29"      ],  7, "<"));
+        #writeText += ", 종목명({0})"      .format(self.preFormat(obj["f30"      ], 20, "<"));
+        #writeText += ", 종목코드({0})"    .format(self.preFormat(obj["f31"      ],  6, ">"));
+        #writeText += ", 매매구분({0})"    .format(self.preFormat(obj["f32"      ],  8, ">"));
+        #writeText += ", 주문가격({0})"    .format(self.preFormat(obj["f228"     ],  7, ">"));
+        #writeText += ", 주문수량({0})"    .format(self.preFormat(obj["f311"     ],  7, ">"));
+        #writeText += ", 체결수량({0})"    .format(self.preFormat(obj["f290"     ],  3, ">"));
+        #writeText += ", 단위체결가({0})"  .format(self.preFormat(obj["f691"     ],  7, ">"));
+        #writeText += ", 단위체결량({0})"  .format(self.preFormat(obj["f567"     ],  7, ">"));
+        #writeText += ", 주문번호({0})"    .format(self.preFormat(obj["f568"     ],  7, "<"));
+        #writeText += ", 종목명({0})"      .format(self.preFormat(obj["f851"     ], 20, "<"));
 
-        #with open(file="logging/" + datetime.datetime.now().strftime("%Y%m%d") + "/stress_" + datetime.datetime.now().strftime("%Y%m%d") + ".log", mode="a", encoding="UTF-8") as fileData:
-            #writeText =  "[{0}:{1}]"          .format(datetime.datetime.now(), "buySellPrice");
-            #writeText += ", 주문번호({0})"    .format(self.preFormat(obj["sRealType"],  7, "<"));
-            #writeText += ", 주문번호({0})"    .format(self.preFormat(obj["f9001"    ],  7, "<"));
-            #writeText += ", 종목명({0})"      .format(self.preFormat(obj["f302"     ], 20, "<"));
-            #writeText += ", 종목코드({0})"    .format(self.preFormat(obj["f307"     ],  6, ">"));
-            #writeText += ", 매매구분({0})"    .format(self.preFormat(obj["f920"     ],  8, ">"));
-            #writeText += ", 주문가격({0})"    .format(self.preFormat(obj["f20"      ],  7, ">"));
-            #writeText += ", 주문수량({0})"    .format(self.preFormat(obj["f10"      ],  7, ">"));
-            #writeText += ", 체결수량({0})"    .format(self.preFormat(obj["f11"      ],  3, ">"));
-            #writeText += ", 단위체결가({0})"  .format(self.preFormat(obj["f12"      ],  7, ">"));
-            #writeText += ", 단위체결량({0})"  .format(self.preFormat(obj["f27"      ],  7, ">"));
-            #writeText += ", 주문번호({0})"    .format(self.preFormat(obj["f28"      ],  7, "<"));
-            #writeText += ", 종목명({0})"      .format(self.preFormat(obj["f15"      ], 20, "<"));
-            #writeText += ", 종목코드({0})"    .format(self.preFormat(obj["f13"      ],  6, ">"));
-            #writeText += ", 매매구분({0})"    .format(self.preFormat(obj["f14"      ],  8, ">"));
-            #writeText += ", 주문가격({0})"    .format(self.preFormat(obj["f16"      ],  7, ">"));
-            #writeText += ", 주문수량({0})"    .format(self.preFormat(obj["f17"      ],  7, ">"));
-            #writeText += ", 체결수량({0})"    .format(self.preFormat(obj["f18"      ],  3, ">"));
-            #writeText += ", 단위체결가({0})"  .format(self.preFormat(obj["f25"      ],  7, ">"));
-            #writeText += ", 단위체결량({0})"  .format(self.preFormat(obj["f26"      ],  7, ">"));
-            #writeText += ", 주문번호({0})"    .format(self.preFormat(obj["f29"      ],  7, "<"));
-            #writeText += ", 종목명({0})"      .format(self.preFormat(obj["f30"      ], 20, "<"));
-            #writeText += ", 종목코드({0})"    .format(self.preFormat(obj["f31"      ],  6, ">"));
-            #writeText += ", 매매구분({0})"    .format(self.preFormat(obj["f32"      ],  8, ">"));
-            #writeText += ", 주문가격({0})"    .format(self.preFormat(obj["f228"     ],  7, ">"));
-            #writeText += ", 주문수량({0})"    .format(self.preFormat(obj["f311"     ],  7, ">"));
-            #writeText += ", 체결수량({0})"    .format(self.preFormat(obj["f290"     ],  3, ">"));
-            #writeText += ", 단위체결가({0})"  .format(self.preFormat(obj["f691"     ],  7, ">"));
-            #writeText += ", 단위체결량({0})"  .format(self.preFormat(obj["f567"     ],  7, ">"));
-            #writeText += ", 주문번호({0})"    .format(self.preFormat(obj["f568"     ],  7, "<"));
-            #writeText += ", 종목명({0})"      .format(self.preFormat(obj["f851"     ], 20, "<"));
-            #fileData.write(writeText + "\n");
-        
         sScrNoList = obj["f920"].split(";") \
                      if "f920" in obj else  \
                      [];
@@ -575,7 +540,7 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
                 for myStock in self.twMyStocks.getRowDatas(obj["f9001"]):
                     myStock["nowPrice"] = obj["f10"];
                     self.twMyStocks.addRows(self.calcStock(myStock));
-                    #self.modalInformation.updateNowPrice(myStock);
+                    self.modalInformation.updateNowPrice(myStock);
                 self.updateSummary();
             
             #미체결 잔고 현재가 업데이트
@@ -803,7 +768,7 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
                 self.setRealRemove("7000", chejan["stockCode"]);    
             
             #테스트를 위한 로그기록
-            testLogFile(chejan, tradeStock, self.gbMyAccount.vOrderableAmount.text());
+            #testLogFile(chejan, tradeStock, self.gbMyAccount.vOrderableAmount.text());
         
         elif obj["gubun"] == "1":#잔고갱신
             #gubun=0 접수만 되었는데도.. 왜 잔고가 현재정보로 날라옴
@@ -1041,6 +1006,7 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
                     telegramMsg += "-계좌:{0}\r\n".format(self.gbMyAccount.vTotalProfit.text());
                     telegramMsg += "-당일:{0}".format(self.gbMyAccount.vTodayProfit.text());
                     asyncio.run(self.sendMessage(telegramMsg));
+                    self.closeAndCommitAll();
                     self.close();
                 else:
                     event.ignore();
@@ -1053,6 +1019,7 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
                 telegramMsg += "-계좌:{0}\r\n".format(self.gbMyAccount.vTotalProfit.text());
                 telegramMsg += "-당일:{0}".format(self.gbMyAccount.vTodayProfit.text());
                 asyncio.run(self.sendMessage(telegramMsg));
+                self.closeAndCommitAll();
                 self.close();
         except Exception as e:
             print(e);

@@ -223,4 +223,5 @@ $RECYCLE.BIN/
 #append ignore folder..
 *.ini
 *.bat
+*.db
 #modules/strategy/MyStrategy.py
