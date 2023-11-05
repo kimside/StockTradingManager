@@ -145,7 +145,9 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
         
         self.myThread = MyThread(self);
         self.myThread.tSignal.connect(self.stockSignalSlot);
-        self.myThread.start();
+        
+        if self.kwargs.get("mode", "stage") == "debug":
+            self.myThread.start();
 
         if datetime.datetime.now().strftime("%H%M") < "1600":
             self.showDownTimer = QtCore.QTimer();
