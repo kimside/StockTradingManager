@@ -13,7 +13,32 @@ class MyStrategy(AbstractStrategy):
         self.isRun = False;
         self.parent = parent;
         self.appSettings = self.parent.appSettings;
-        self.monentSize = 100;
+        self.myStrategy  = self.appSettings.myStrategy;
+        self.monentSize  = 100;
+        self.datetime    = datetime.datetime;
+        self.buyTaxRate  = self.parent.buyTaxRate; #매수 수수료
+        
+        self.startTime     = self.appSettings.vRunStartTime.toString("hhmm"); #자동매매 시작시간
+        self.endTime       = self.appSettings.vRunEndTime.toString("hhmm");   #자동매매 종료시간
+        self.tradeMaxCount = self.appSettings.vTradeMaxCount;                 #자동매매 거래 종목 갯수 제한
+        self.buyRateActive = self.appSettings.vBuyRate;                       #매수 비율/금액지정 여부(True: 비율, False:금액지정)
+        self.buyRate       = self.appSettings.vBuyRateValue;                  #매수 매수가능금액 대비 지정비율
+        self.buyAmount     = self.appSettings.vBuyAmountValue;                #매수 지정금액태
+        self.currentTab    = self.appSettings.currentTab;                     #TrailingStop/StopLoss 활성화 탭(0:TrailingStop, 1:StopLoss)
+
+        self.tsProfitRate    = self.appSettings.vtsTargetProfit;         #TrailingStop 목표수익율
+        self.tsLossRate      = self.appSettings.vtsTargetLoss;           #TrailingStop 목표손실율
+
+        self.tsDivBuyActive  = self.appSettings.vtsTouchDivideBuyActive; #TrailingStop 추가매수 활성화 여부
+        self.tsDivBuyCount   = self.appSettings.vtsTouchDivideBuy;       #TrailingStop 추가매수 횟수
+        self.tsDivProfitRate = self.appSettings.vtsTouchDivideProfit;    #TrailingStop 목표수익율 달성 후 분할매도 추가수익율
+        self.tsDivRate       = self.appSettings.vtsTouchDivideRate;      #TrailingStop 목표수익율 달성 후 분할매도 비율
+        self.tsServeRate     = self.appSettings.vtsTouchDivideServeRate; #TrailingStop 목표수익율 달성 후 보존수익율
+        
+        self.slProfit       = self.appSettings.vslTargetProfit;         #StopLoss 목표수익율
+        self.slLoss         = self.appSettings.vslTargetLoss;           #StopLoss 목표손실율
+        self.slDivBuyActive = self.appSettings.vslTouchDivideBuyActive; #StopLoss 추가매수 활성화 여부
+        self.slDivBuyCount  = self.appSettings.vslTouchDivideBuy;       #StopLoss 추가매수 횟수
 
         #조건검색 결과 전략분석
         self.conStrategy = {};
@@ -21,8 +46,8 @@ class MyStrategy(AbstractStrategy):
     
     #매수전략
     def buyStrategy(self, obj):
-        isTradeTime = datetime.datetime.now().strftime("%H%M") >= self.appSettings.vRunStartTime.toString("hhmm") and \
-                      datetime.datetime.now().strftime("%H%M") <= self.appSettings.vRunEndTime.toString("hhmm");
+        isTradeTime = self.datetime.now().strftime("%H%M") >= self.startTime and \
+                      self.datetime.now().strftime("%H%M") <= self.endTime;
         
         if self.isRun and isTradeTime:
             if obj["f9001"] in self.conStrategy:
@@ -33,14 +58,13 @@ class MyStrategy(AbstractStrategy):
                 #계좌보유주식 목록에 없음
                 #순간체결강도 집계 목록이 30개 넘음
                 #순간체결강도가 150이상
-                if not (obj["f9001"], obj["f302"]) in self.appSettings.orderList           \
-                    and len(self.appSettings.orderList) <= self.appSettings.vTradeMaxCount \
-                    and self.parent.twMyStocks.isExist(obj["f9001"]) == None               \
-                    and len(thisStrategy["momentList"]) > 30                               \
+                if not (obj["f9001"], obj["f302"]) in self.appSettings.orderList \
+                    and len(self.appSettings.orderList) <= self.tradeMaxCount    \
+                    and self.parent.twMyStocks.isExist(obj["f9001"]) == None     \
+                    and len(thisStrategy["momentList"]) > 30                     \
                     and thisStrategy["momentStrength"]  > 150:
                     
                     orderCount = self.getBuyCount(int(obj["f10"]));
-                    obj["reminingCount"] = orderCount;
                     if orderCount > 0:
                         result = self.sendOrder({
                             "sScrNo"     : "3001",
@@ -52,8 +76,9 @@ class MyStrategy(AbstractStrategy):
                         }, {
                             "stockCode"    : obj["f9001"],
                             "stockName"    : obj["f302" ],
-                            "reminingCount": orderCount,
                         });
+                    else:
+                        result = -1;
             else:
                 self.conStrategy[obj["stockCode"]] = {
                     "momentList"    : [],
@@ -61,13 +86,13 @@ class MyStrategy(AbstractStrategy):
                 };
     #매도전략
     def sellStrategy(self, obj):
-        isTradeTime = datetime.datetime.now().strftime("%H%M") >= self.appSettings.vRunStartTime.toString("hhmm") and \
-                      datetime.datetime.now().strftime("%H%M") <= self.appSettings.vRunEndTime.toString("hhmm");
+        isTradeTime = self.datetime.now().strftime("%H%M") >= self.startTime and \
+                      self.datetime.now().strftime("%H%M") <= self.endTime;
 
         if self.isRun and isTradeTime:
             myStocks = self.parent.twMyStocks.getRowDatas(obj["f9001"]);
             for myStock in myStocks:
-                if self.parent.appSettings.currentTab == 0:
+                if self.currentTab == 0:
                     self.trailingStop(obj, myStock);
                 else:
                     self.stopLoss(obj, myStock);
@@ -85,95 +110,95 @@ class MyStrategy(AbstractStrategy):
         3022: StopLoss(매도) 수익달성,
         3023: StopLoss(매도) 손실 전량매도,
         """
-        result = -1;
-        #접수인 상태에서는 주문수량을 취소하고, 체결 상태에서는 미체결 수량을 취소한다.
-        nQty = stock["missCount"] if stock["missCount"] != 0 else stock["orderCount"];
-        if nQty != 0:
+        orderCount = stock["orderCount"] if stock["orderStatus"] == "접수" else stock["missCount"];
+        if orderCount > 0:
             result = self.sendOrder({
                 "nOrderType" : 3 if stock["hogaGb"] == "+매수" else 4,
                 "sScrNo"     : stock["screenNo"  ],
-                "sCode"      : stock["stockCode" ],#주문유형 1:신규매수, 2:신규매도 3:매수취소, 4:매도취소, 5:매수정정, 6:매도정정
-                "nQty"       : stock["missCount" ] if stock["missCount"] != 0 else stock["orderCount"],#미체결수량만큼 취소한다.
+                "sCode"      : stock["stockCode" ], #주문유형 1:신규매수, 2:신규매도 3:매수취소, 4:매도취소, 5:매수정정, 6:매도정정
+                "nQty"       : orderCount         , #접수인 상태에서는 주문수량을 취소하고, 체결 상태에서는 미체결 수량을 취소한다.
                 "nPrice"     : stock["nowPrice"  ],
                 "sOrgOrderNo": stock["orderNo"   ],
                 "reason"     : "미체결 대기시간 초과 주문취소({0})".format(stock["hogaGb"]),
             }, stock);
         else:
-            print("미체결 대기시간 초과 주문취소 수량 확인 {0}({1}) {2} (수량:{3})".format(stock["stockName"], stock["stockCode"], stock["hogaGb"], nQty));
             result = -1;
         return result;
     
     #트레일링 스탑
     def trailingStop(self, obj, myStock):
-        myStrategy   = self.appSettings.myStrategy[obj["f9001"]]           \
-                       if obj["f9001"] in self.appSettings.myStrategy else \
-                       None;
+        myStrategy = self.myStrategy[obj["f9001"]]           \
+                     if obj["f9001"] in self.myStrategy else \
+                     None;
         
-        tsProfitRate    = self.parent.appSettings.vtsTargetProfit;         #TrailingStop 목표수익율
-        tsLossRate      = self.parent.appSettings.vtsTargetLoss;           #TrailingStop 목표손실율
-        tsDivProfitRate = self.parent.appSettings.vtsTouchDivideProfit;    #TrailingStop 목표수익율 달성 후 분할매도 추가수익율
-        tsDivRate       = self.parent.appSettings.vtsTouchDivideRate;      #TrailingStop 목표수익율 달성 후 분할매도 비율
-        tsServeRate     = self.parent.appSettings.vtsTouchDivideServeRate; #TrailingStop 목표수익율 달성 후 보존수익율
+        if myStrategy == None:
+            return;
+    
         nowPrice        = int(obj["f10"]);#현재가
+        result          = -1;
 
-        if myStrategy.get("tsActive"):
+        if myStrategy["tsActive"]:
             #목표 수익율 진입
-            if myStrategy.get("tsDivSell") == 0:
+            if myStrategy["tsDivSell"] == 0:
                 #현재 수익율이 목표수익율 달성시 최초 분할매도
-                orderCount = int(myStock["reminingCount"] * tsDivRate / 100);
+                orderCount = int(myStock["reminingCount"] * self.tsDivRate / 100);
                 orderCount = myStock["reminingCount"] \
                              if orderCount == 0 else  \
                              orderCount;
-                result = self.sendOrder({
-                    "sScrNo"     : "3012",
-                    "nOrderType": 2,
-                    "sCode"     : myStock["stockCode"],
-                    "nQty"      : orderCount,
-                    "nPrice"    : nowPrice,
-                    "reason"    : "TrailingStop 목표가 달성매도",
-                }, myStock);
+                if orderCount > 0:
+                    result = self.sendOrder({
+                        "sScrNo"     : "3012",
+                        "nOrderType": 2,
+                        "sCode"     : myStock["stockCode"],
+                        "nQty"      : orderCount,
+                        "nPrice"    : nowPrice,
+                        "reason"    : "TrailingStop 목표가 달성매도",
+                    }, myStock);
 
-                if result == 0:
-                    myStrategy["tsDivSell"] += 1;
+                    if result == 0:
+                        myStrategy["tsDivSell"] += 1;
             
-            elif nowPrice > myStrategy["averagePrice"] + int(myStrategy["averagePrice"] * (tsProfitRate + (myStrategy.get("tsDivSell") * tsDivProfitRate)) / 100):
+            elif nowPrice > myStrategy["averagePrice"] + int(myStrategy["averagePrice"] * (self.tsProfitRate + (myStrategy["tsDivSell"] * self.tsDivProfitRate)) / 100):
                 #현재가가 초과 수익가를 넘었다면 분할매도
-                maxSellCnt = int(100 / tsDivRate);#분할매도 마지막 회차에는 주문가능수량을 전량 매도신청한다.
-                orderCount = int(myStock["reminingCount"] * tsDivRate * myStrategy.get("tsDivSell") / 100 \
-                                if myStrategy.get("tsDivSell") <= maxSellCnt else                         \
-                                myStock["reminingCount"]);
-                orderCount = myStock["reminingCount"] \
-                             if orderCount == 0 else  \
-                             orderCount;
-                result = self.sendOrder({
-                    "sScrNo"    : "3012",
-                    "nOrderType": 2,
-                    "sCode"     : myStock["stockCode"],
-                    "nQty"      : orderCount,
-                    "nPrice"    : nowPrice,
-                    "reason"    : "TrailingStop 추가목표가 달성매도({0})".format(myStrategy.get("tsDivSell") + 1),
-                }, myStock);
+                maxSellCnt = int(100 / self.tsDivRate);
+                #분할매도 마지막 회차에는 주문가능수량을 전량 매도신청한다.
+                orderCount = int(myStock["reminingCount"] * self.tsDivRate * myStrategy["tsDivSell"] / 100 \
+                                 if myStrategy["tsDivSell"] < maxSellCnt else                              \
+                                 myStock["reminingCount"]);
+                orderCount = myStock["reminingCount"] if orderCount == 0 else orderCount;
+                
+                if orderCount > 0:
+                    result = self.sendOrder({
+                        "sScrNo"    : "3012",
+                        "nOrderType": 2,
+                        "sCode"     : myStock["stockCode"],
+                        "nQty"      : orderCount,
+                        "nPrice"    : nowPrice,
+                        "reason"    : "TrailingStop 추가목표가 달성매도({0})".format(myStrategy.get("tsDivSell") + 1),
+                    }, myStock);
 
-                if result == 0:
-                    myStrategy["tsDivSell"] += 1;
-            
-            elif nowPrice < myStrategy["averagePrice"] + (myStrategy["tsHighPrice"] - myStrategy["averagePrice"]) * tsServeRate / 100:
+                    if result == 0:
+                        myStrategy["tsDivSell"] += 1;
+
+            elif nowPrice < myStrategy["averagePrice"] + (myStrategy["tsHighPrice"] - myStrategy["averagePrice"]) * self.tsServeRate / 100:
                 #고점대비 현재가가 수익보존율 보다 낮다면 매도
-                result = self.sendOrder({
-                    "sScrNo"    : "3013",
-                    "nOrderType": 2,
-                    "sCode"     : myStock["stockCode"    ],
-                    "nQty"      : myStock["reminingCount"],
-                    "nPrice"    : nowPrice,
-                    "reason"    : "TrailingStop 수익보존 매도",
-                }, myStock);
+                if myStock["reminingCount"] > 0:
+                    result = self.sendOrder({
+                        "sScrNo"    : "3013",
+                        "nOrderType": 2,
+                        "sCode"     : myStock["stockCode"    ],
+                        "nQty"      : myStock["reminingCount"],
+                        "nPrice"    : nowPrice,
+                        "reason"    : "TrailingStop 수익보존 매도",
+                    }, myStock);
 
-                if result == 0:
-                    myStrategy["tsDivSell"] += 1;
+                    if result == 0:
+                        myStrategy["tsDivSell"] += 1;
+
         else:
             #목표 수익율 미진입(손실율에 도달했다면)
-            if nowPrice < myStrategy["averagePrice"] + int(myStrategy["averagePrice"] * (tsLossRate * myStrategy.get("tsAddBuy")) / 100):
-                if self.appSettings.vtsTouchDivideBuyActive and self.appSettings.vtsTouchDivideBuy > myStrategy.get("tsAddBuy"):
+            if nowPrice < myStrategy["averagePrice"] + int(myStrategy["averagePrice"] * (self.tsLossRate * myStrategy["tsAddBuy"]) / 100):
+                if self.tsDivBuyActive and self.tsDivBuyCount > myStrategy["tsAddBuy"]:
                     #추가매수(TrailingStop 추가매수 활성화, TrailingStop 추가매수 횟수확인)
                     orderCount = self.getBuyCount(nowPrice);
                     if orderCount > 0:
@@ -183,44 +208,52 @@ class MyStrategy(AbstractStrategy):
                             "sCode"      : myStock["stockCode"],
                             "nQty"       : orderCount,
                             "nPrice"     : nowPrice,
-                            "reason"     : "TrailingStop 추가매수({0})".format(myStrategy.get("tsAddBuy") + 1),
+                            "reason"     : "TrailingStop 추가매수({0})".format(myStrategy["tsAddBuy"] + 1),
                         }, myStock);
 
                         if result == 0:
                             myStrategy["tsAddBuy"] += 1;
                 else:
-                    result = self.sendOrder({
-                        "sScrNo"    : "3014",
-                        "nOrderType": 2,
-                        "sCode"     : myStock["stockCode"    ],
-                        "nQty"      : myStock["reminingCount"],
-                        "nPrice"    : nowPrice,
-                        "reason"    : "TrailingStop 추가매수 초과 손실매도"
-                                      if self.appSettings.vtsTouchDivideBuyActive and
-                                         self.appSettings.vtsTouchDivideBuy < myStrategy.get("tsAddBuy") else
-                                      "TrailingStop 손실매도",
-                    }, myStock);
+                    if myStock["reminingCount"] > 0:
+                        result = self.sendOrder({
+                            "sScrNo"    : "3014",
+                            "nOrderType": 2,
+                            "sCode"     : myStock["stockCode"    ],
+                            "nQty"      : myStock["reminingCount"],
+                            "nPrice"    : nowPrice,
+                            "reason"    : "TrailingStop 추가매수 초과 손실매도"
+                                          if self.tsDivBuyActive and self.tsDivBuyCount < myStrategy["tsAddBuy"] else
+                                          "TrailingStop 손실매도",
+                        }, myStock);
+
+                        if result == 0:
+                            myStrategy["tsDivSell"] += 1;
+        return result;
     
     #스탑로스
     def stopLoss(self, obj, myStock):
-        myStrategy = self.appSettings.myStrategy[obj["f9001"]]           \
-                     if obj["f9001"] in self.appSettings.myStrategy else \
+        myStrategy = self.myStrategy[obj["f9001"]]           \
+                     if obj["f9001"] in self.myStrategy else \
                      {};
-        slProfit   = self.parent.appSettings.vslTargetProfit;#StopLoss 목표수익율
-        slLoss     = self.parent.appSettings.vslTargetLoss;  #StopLoss 목표손실율
+        
         nowPrice   = int(obj["f10"]);#현재가
         
-        if slProfit <= myStock["profitRate"]:
-            result = self.sendOrder({
-                "sScrNo"    : "3022",
-                "nOrderType": 2,
-                "sCode"     : myStock["stockCode"    ],
-                "nQty"      : myStock["reminingCount"],
-                "nPrice"    : nowPrice,
-                "reason"    : "StopLoss 수익달성 매도"
-            }, myStock);
-        elif nowPrice < myStrategy["averagePrice"] + int(myStrategy["averagePrice"] * (slLoss * myStrategy.get("slAddBuy")) / 100):
-            if self.appSettings.vslTouchDivideBuyActive and self.appSettings.vslTouchDivideBuy > myStrategy.get("slAddBuy"):
+        if self.slProfit <= myStock["profitRate"]:
+            if myStock["reminingCount"] > 0:
+                result = self.sendOrder({
+                    "sScrNo"    : "3022",
+                    "nOrderType": 2,
+                    "sCode"     : myStock["stockCode"    ],
+                    "nQty"      : myStock["reminingCount"],
+                    "nPrice"    : nowPrice,
+                    "reason"    : "StopLoss 수익달성 매도"
+                }, myStock);
+
+                if result == 0:
+                    myStrategy["slDivSell"] += 1;
+                
+        elif nowPrice < myStrategy["averagePrice"] + int(myStrategy["averagePrice"] * (self.slLoss * myStrategy["slAddBuy"]) / 100):
+            if self.slDivBuyActive and self.slDivBuyCount > myStrategy["slAddBuy"]:
                 orderCount = self.getBuyCount(nowPrice);
                 if orderCount > 0:
                     result = self.sendOrder({
@@ -229,55 +262,57 @@ class MyStrategy(AbstractStrategy):
                         "sCode"      : myStock["stockCode"],
                         "nQty"       : orderCount,
                         "nPrice"     : nowPrice,
-                        "reason"     : "StopLoss 추가매수({0})".format(myStrategy.get("slAddBuy") + 1),
+                        "reason"     : "StopLoss 추가매수({0})".format(myStrategy["slAddBuy"] + 1),
                     }, myStock);
 
                     if result == 0:
                         myStrategy["slAddBuy"] += 1;
-                else:
-                    #추가매수할 매수가능금액이 부족하다면.. 전량매도??
-                    pass;
+            
             else:
-                result = self.sendOrder({
-                    "sScrNo"    : "3001",
-                    "nOrderType": 2,
-                    "sCode"     : myStock["stockCode"    ],
-                    "nQty"      : myStock["reminingCount"],
-                    "nPrice"    : nowPrice,
-                    "reason"    : "StopLoss 추가매수 초과 손실매도"
-                                  if self.appSettings.vslTouchDivideBuyActive and
-                                     self.appSettings.vslTouchDivideBuy < myStrategy.get("slAddBuy") else
-                                  "StopLoss 손실매도",
-                }, myStock);
+                if myStock["reminingCount"] > 0:
+                    result = self.sendOrder({
+                        "sScrNo"    : "3001",
+                        "nOrderType": 2,
+                        "sCode"     : myStock["stockCode"    ],
+                        "nQty"      : myStock["reminingCount"],
+                        "nPrice"    : nowPrice,
+                        "reason"    : "StopLoss 추가매수 초과 손실매도"
+                                       if self.slDivBuyActive and self.slDivBuyCount < myStrategy["slAddBuy"] else
+                                      "StopLoss 손실매도",
+                    }, myStock);
+                    
+                    if result == 0:
+                        myStrategy["slDivSell"] += 1;
         
     #계좌 보유주식 일괄매도
     def stockSellAll(self):
         myStocks = iter(self.parent.twMyStocks.getRowDatas());    
         myStock = next(myStocks, None);
         while myStock != None:
-            result = self.sendOrder({
-                "sScrNo"    : "3002",
-                "nOrderType": 2,
-                "sCode"     : myStock["stockCode"    ],
-                "nQty"      : myStock["reminingCount"],
-                "nPrice"    : myStock["nowPrice"     ],
-                "reason"    : "계좌 보유주식 일괄매도",
-            }, myStock);
-            
-            if result == 0:
-                myStock = next(myStocks, None);
-            else:
-                time.sleep(0.25);
+            if myStock["reminingCount"] > 0:
+                result = self.sendOrder({
+                    "sScrNo"    : "3002",
+                    "nOrderType": 2,
+                    "sCode"     : myStock["stockCode"    ],
+                    "nQty"      : myStock["reminingCount"],
+                    "nPrice"    : myStock["nowPrice"     ],
+                    "reason"    : "계좌 보유주식 일괄매도",
+                }, myStock);
+                
+                if result == 0:
+                    myStock = next(myStocks, None);
+                else:
+                    time.sleep(0.25);
 
     #매수가능 수량 조회
     def getBuyCount(self, nowPrice):
         vOrderableAmount = self.parent.gbMyAccount.getAccountInfo()["vOrderableAmount"]; #주문가능금액
         orderAmount = 0;
-        if self.appSettings.vBuyRate:
-            orderAmount = vOrderableAmount * (self.appSettings.vBuyRateValue / 100);
+        if self.vBuyRateActive:
+            orderAmount = vOrderableAmount * (self.buyRate / 100);
         else:
-            orderAmount = self.appSettings.vBuyAmountValue if vOrderableAmount > self.appSettings.vBuyAmountValue else vOrderableAmount;
-        buyAmount = (nowPrice + int(nowPrice * self.parent.buyTaxRate / 10 * 10));
+            orderAmount = self.buyAmount if vOrderableAmount > self.buyAmount else vOrderableAmount;
+        buyAmount = (nowPrice + int(nowPrice * self.buyTaxRate / 10 * 10));
         return int(orderAmount / buyAmount);
 
     #주문신청
@@ -299,7 +334,7 @@ class MyStrategy(AbstractStrategy):
                 #매도시.. 주문가능수량 갱신은.. 매도 주문 넣으면서..(취소 주문 넣을때는.. 전략에서 다시 주문가능수량 갱신해야 함)
                 if result == 0:
                     stock["reminingCount"] = stock["reminingCount"] - int(order["nQty"]);
-                    self.parent.twMyStocks.addRows([stock]);
+                    self.parent.twMyStocks.addRows(stock);
                 elif result == -308:
                     time.sleep(0.25);
                 
@@ -383,14 +418,14 @@ class MyStrategy(AbstractStrategy):
         #보유주식 계좌 전략분석
         myStocks = self.parent.twMyStocks.getRowDatas(obj["f9001"]);
         for myStock in myStocks:
-            myStrategy = self.appSettings.myStrategy[myStock["stockCode"]] \
-                         if myStock["stockCode"] in self.appSettings.myStrategy else \
+            myStrategy = self.myStrategy[myStock["stockCode"]]           \
+                         if myStock["stockCode"] in self.myStrategy else \
                          None;
 
             if myStrategy != None:
-                if self.parent.appSettings.currentTab == 0:
+                if self.currentTab == 0:
                     if myStrategy["tsActive"] == False:
-                        if myStock["profitRate"] >= self.parent.appSettings.vtsTargetProfit:
+                        if myStock["profitRate"] >= self.tsProfitRate:
                             myStrategy["tsActive"   ] = True;
                             myStrategy["tsHighPrice"] = nowPrice;
                     else:
@@ -399,7 +434,7 @@ class MyStrategy(AbstractStrategy):
                 myStrategy["nowPrice"    ] = nowPrice;
                 myStrategy["averagePrice"] = myStock["averagePrice"];
             else:
-                self.appSettings.myStrategy[myStock["stockCode"]] = {
+                self.myStrategy[myStock["stockCode"]] = {
                     "stockCode"   : myStock["stockCode"   ],
                     "stockName"   : myStock["stockName"   ],
                     "nowPrice"    : myStock["nowPrice"    ],
@@ -410,4 +445,3 @@ class MyStrategy(AbstractStrategy):
                     "tsAddBuy"    : 0,
                     "slAddBuy"    : 0,
                 };
-

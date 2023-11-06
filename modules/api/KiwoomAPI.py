@@ -543,6 +543,13 @@ class KiwoomAPI(LogMaker, metaclass=Singleton):
             obj["f568" ] = self.api.dynamicCall("GetCommRealData(QString, int)", sCode, 568); #하한가발생시간
             obj["f851" ] = self.api.dynamicCall("GetCommRealData(QString, int)", sCode, 851); #전일 동시간 거래량 비율
         
+        elif sRealType == "장시작시간":
+            obj["rType"] = "07";
+            obj["f215" ] = self.api.dynamicCall("GetCommRealData(QString, int)", sCode, 215); #장운영구분
+            obj["f20"  ] = self.api.dynamicCall("GetCommRealData(QString, int)", sCode,  20); #체결시간
+            obj["f214" ] = self.api.dynamicCall("GetCommRealData(QString, int)", sCode, 214); #장시작예상잔여시간
+        
+        """
         elif sRealType == "주식우선호가":
             obj["rType"] = "03";
             obj["f21"  ] = self.api.dynamicCall("GetCommRealData(QString, int)", sCode,  21); #호가시간
@@ -718,13 +725,8 @@ class KiwoomAPI(LogMaker, metaclass=Singleton):
             obj["f267" ] = self.api.dynamicCall("GetCommRealData(QString, int)", sCode, 267); #외국계순매수추정합
             obj["f268" ] = self.api.dynamicCall("GetCommRealData(QString, int)", sCode, 268); #외국계순매수변동
             obj["f337" ] = self.api.dynamicCall("GetCommRealData(QString, int)", sCode, 337); #거래소구분
-        
-        elif sRealType == "장시작시간":
-            obj["rType"] = "07";
-            obj["f215" ] = self.api.dynamicCall("GetCommRealData(QString, int)", sCode, 215); #장운영구분
-            obj["f20"  ] = self.api.dynamicCall("GetCommRealData(QString, int)", sCode,  20); #체결시간
-            obj["f214" ] = self.api.dynamicCall("GetCommRealData(QString, int)", sCode, 214); #장시작예상잔여시간
-        
+        """
+        """
         elif sRealType == "주식예상체결":
             obj["rType"] = "08";
             obj["f20" ] = self.api.dynamicCall("GetCommRealData(QString, int)", sCode, 20); #체결시간
@@ -802,7 +804,7 @@ class KiwoomAPI(LogMaker, metaclass=Singleton):
             obj["f1490"] = self.api.dynamicCall("GetCommRealData(QString, int)", sCode, 1490); #VI발동횟수
             obj["f9069"] = self.api.dynamicCall("GetCommRealData(QString, int)", sCode, 9069); #발동방향구분
             obj["f1279"] = self.api.dynamicCall("GetCommRealData(QString, int)", sCode, 1279); #Extra Item
-
+        
         elif sRealType == "주문체결":
             obj["rType"] = "13";
             obj["f9201"] = self.api.dynamicCall("GetCommRealData(QString, int)", sCode, 9201); #계좌번호
@@ -954,14 +956,16 @@ class KiwoomAPI(LogMaker, metaclass=Singleton):
         else:
             obj["rType"] = "99";
             print("처리되지 않는 type: '{0}'입니다 ".format(sRealType));
-
+        """
         if "f10" in obj:
             obj["f10"] = obj["f10"].replace("-", "");
         
         #주식우선호가(매수/매도 1호가 가격이 변경되면 전달) 데이터가 너무 많이 온다.. 화면 버벅임..
-        if not sRealType in ["주식우선호가"]:
-            self.stockSignal.emit(obj);
-            self.logReal(obj);
+        if not sRealType in ["주식우선호가", "장시작시간"]:
+            #사용하지 않는 실시간 데이터는 로그로 저장하지 않는다(부하가 많을때 처리량이 밀림)
+            if sRealType in ["주식체결"]:
+                self.stockSignal.emit(obj);
+                self.logReal(obj);
     
     #키움서버에서 수신된 메세지
     #sScrNo,  //화면번호
@@ -1096,9 +1100,6 @@ class KiwoomAPI(LogMaker, metaclass=Singleton):
             obj["f305"] = obj["f305"].replace("+","").replace("-",""); #상한가
         
         #주문취소, 주문정정의 마지막 echo 값으로 전달하지 않아도 된다.
-        #if not (obj.get("f915", "") == "" and obj["f902"] == "0"):
-        #    self.chejanSignal.emit(obj);
-        #    self.logChejan(obj);
         self.chejanSignal.emit(obj);
         self.logChejan(obj);
         

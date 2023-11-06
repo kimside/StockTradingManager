@@ -1,5 +1,4 @@
 import sys, os, datetime, ctypes, traceback, logging, time, telegram, asyncio;
-import sqlite3;
 
 from telegram import Update;
 from telegram.constants import ParseMode;
@@ -204,7 +203,7 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
             {"id": "nowPrice"     , "name": "현재가"  , "type": int},
             {"id": "stdPrice"     , "name": "기준가"  , "type": int},
             {"id": "diffPrice"    , "name": "전일대비", "type": int, "formatter": "{0:+,}"},
-            {"id": "changeRate"   , "name": "등락율"  , "type": float, "formatter": "{0:+}%", "isBg": True},
+            {"id": "changeRate"   , "name": "등락율"  , "type": float, "formatter": "{0:+.2f}%", "isBg": True},
             {"id": "tradeCount"   , "name": "거래량"  , "type": int},
             {"id": "tradeStrength", "name": "체결강도", "type": float},
         ]);
@@ -555,7 +554,9 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
                     
                     if self.appSettings.vOrderCancelSecActive:
                         diff = datetime.datetime.now() - chejanStock["chejanTime"];
-                        if diff.seconds > self.appSettings.vOrderCancelSec and chejanStock["hogaGb"] in ["+매수", "-매도"]:
+                        if diff.seconds > self.appSettings.vOrderCancelSec                                   and \
+                           not chejanStock["orderNo"] in self.twChejanHisStocks.getColumnDatas("oriOrderNo") and \
+                           chejanStock["hogaGb"] in ["+매수", "-매도"]:
                             self.myStrategy.orderCancel(chejanStock);
             
             #조건검색결과 정보 업데이트
@@ -684,12 +685,12 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
                 #개발사항: 매수 취소시..  전략부분 원복... 근디.. 최초 매수인지, 추가매수인지 모르는디.. 어떻게 확인 처리하지??
                 if chejan["screenNo"] == "3001":
                     self.appSettings.orderList.remove((chejan["stockCode"], chejan["stockName"]));
-                elif chejan["screenNo"] == "3011":
-                    if self.appSettings.myStrategy[chejan["stockCode"]]["tsAddBuy"] > 0:
-                        self.appSettings.myStrategy[chejan["stockCode"]]["tsAddBuy"] -= 1;
-                elif chejan["scrennNo"] == "3021":
-                    if self.appSettings.myStrategy[chejan["stockCode"]]["slAddBuy"] > 0:
-                        self.appSettings.myStrategy[chejan["stockCode"]]["slAddBuy"] -= 1;
+                elif chejan["screenNo"] == ["3011", "3021"]:
+                    myStrategy = self.appSettings.myStrategy[chejan["stockCode"]];
+                    if chejan["screenNo"] == "3011":
+                        myStrategy["tsAddBuy"] -= 1;
+                    else:
+                        myStrategy["slAddBuy"] -= 1;
 
                 #원주문번호를 찾아 해당 주문건을 삭제한다.
                 self.twChejanStocks.delRows(chejan["oriOrderNo"]);
@@ -703,21 +704,19 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
                 3023: StopLoss(매도) 손실 전량매도,
                 """
                 #개발사항: 매도 취소시..  전략부분 원복... 근디.. 수익 매도인지, 손실매도인지 모르는디.. 어떻게 확인 처리하지??
-                if chejan["screenNo"] in ["3012", "3013", "3014"]:
-                    if self.appSettings.myStrategy[chejan["stockCode"]]["tsAddSell"] > 0:
-                        self.appSettings.myStrategy[chejan["stockCode"]]["tsAddSell"] -= 1;
-                elif chejan["screenNo"] in ["3022", "3023"]:
-                    if self.appSettings.myStrategy[chejan["stockCode"]]["slAddSell"] > 0:
-                        self.appSettings.myStrategy[chejan["stockCode"]]["slAddSell"] -= 1;
+                if chejan["screenNo"] in ["3012", "3013", "3014", "3022", "3023"]:
+                    myStrategy = self.appSettings.myStrategy[chejan["stockCode"]];
+                    if chejan["screenNo"] in ["3012", "3013", "3014"]:
+                        myStrategy["tsDivSell"] -= 1;
+                    else:
+                        myStrategy["slDivSell"] -= 1;
                 
                 #계좌 보유주식 주문가능수량 업데이트(부분 체결이 되었을수도 있기에..  확인해야한다.)
                 myStocks = self.twMyStocks.getRowDatas(chejan["stockCode"]);
-
                 for myStock in myStocks:
                     #취소주문시 수량을 미체결 수량으로 입력해서 여기에선 주문수량으로 받는다.
                     myStock["reminingCount"] += int(chejan["orderCount"]);
-
-                self.twMyStocks.addRows(myStock);
+                    self.twMyStocks.addRows(myStock);
                 
                 #원주문번호를 찾아 해당 주문건을 삭제한다.
                 self.twChejanStocks.delRows(chejan["oriOrderNo"]);
@@ -749,7 +748,7 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
                             myStock = self.calcStock(myStock);
                             self.twMyStocks.addRows(myStock);
                         else:
-                            #잔고수량 - 체결수량 == 0이라면.. 계좌 삭제 아니라면 업데이트 
+                            #잔고수량 - 체결수량 == 0이라면.. 계좌정보에서 해당 종목삭제 아니라면 업데이트 
                             reminingCount = myStock["stockCount"] - int(chejan["unitCount"]);
                             if reminingCount == 0:
                                 self.twMyStocks.delRows(chejan["stockCode"]);
@@ -796,7 +795,7 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
         #매입수수료 = int(averagePrice[평균단가] * stockCount[mField03] * 0.0035 / 10, 1) * 10, 단 실서버는 0.00015
         #매도수수료 = int(nowPrice[현재가]       * stockCount[mField03] * 0.0035 / 10, 1) * 10, 단 실서버는 0.00015
         #세금       = int(nowPrice[현재가]       * stockCount[mField03] * 0.002 , 1)
-        buyTax         = int(buyAmount * self.buyTaxRate / 10) * 10;
+        buyTax         = int(buyAmount * self.buyTaxRate  / 10) * 10;
         sellTax        = int(nowAmount * self.sellTaxRate / 10) * 10;
         tax            = int(nowAmount * self.taxRate);
 
@@ -1008,7 +1007,6 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
                     telegramMsg += "-계좌:{0}\r\n".format(self.gbMyAccount.vTotalProfit.text());
                     telegramMsg += "-당일:{0}".format(self.gbMyAccount.vTodayProfit.text());
                     asyncio.run(self.sendMessage(telegramMsg));
-                    self.closeAndCommitAll();
                     self.close();
                 else:
                     event.ignore();
@@ -1021,7 +1019,6 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
                 telegramMsg += "-계좌:{0}\r\n".format(self.gbMyAccount.vTotalProfit.text());
                 telegramMsg += "-당일:{0}".format(self.gbMyAccount.vTodayProfit.text());
                 asyncio.run(self.sendMessage(telegramMsg));
-                self.closeAndCommitAll();
                 self.close();
         except Exception as e:
             print(e);

@@ -31,7 +31,8 @@ if __name__ == "__main__":
     ];
     """
     logFiles = [
-        "D:/workspace/StockTrading/logging/20231104/stress_20231104.log"
+        "D:/workspace/StockTrading/logging/20231106/real/onReceiveRealData(주식체결).log",
+        #"D:/workspace/StockTrading/modules/test/testLog.log",
     ];
 
     for logFile in logFiles:
