@@ -14,7 +14,6 @@ if __name__ == "__main__":
     endTime = time.perf_counter();
     print(f"time elapsed : {int(round((endTime - startTime) * 1000))}ms");
     """
-    n = datetime.datetime;
-    for c in range(10):
-        print(n.now());
-        time.sleep(1);
+    a = "가나다asdfg마바사";
+    i = a.index("다")
+    print(a[i: i + 1])

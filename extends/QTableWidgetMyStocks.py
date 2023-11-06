@@ -183,6 +183,7 @@ class QTableWidgetMyStocks(QtWidgets.QTableWidget):
         for row in range(self.rowCount()):
             if str(self.item(row, colIdx).data(QtCore.Qt.UserRole)) == str(id):
                 target = self.item(row, colIdx);
+                break;
         
         return target;
 

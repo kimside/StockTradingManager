@@ -1,8 +1,6 @@
 import sys, os, datetime, ctypes, traceback, logging, time, telegram, asyncio;
 
-from telegram import Update;
 from telegram.constants import ParseMode;
-from telegram.ext import Application, CommandHandler, ContextTypes;
 
 from PyQt5                              import uic, QtWidgets, QtCore, QtGui, QAxContainer;
 from extends.QTableWidgetMyStocks       import *;
@@ -76,6 +74,14 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
         self.testCode         = TestCode(self);        #TestCode Test Dialog(Modal)
         self.myStrategy       = MyStrategy(self);
         
+        #Setting self variable
+        self.vAccountPlusEndActive  = self.appSettings.vAccountPlusEndActive;
+        self.vAccountPlusEnd        = self.appSettings.vAccountPlusEnd;
+        self.vAccountMinusEndActive = self.appSettings.vAccountMinusEndActive;
+        self.vAccountMinusEnd       = self.appSettings.vAccountMinusEnd;
+        self.vDayClearActive        = self.appSettings.vDayClearActive;
+        self.vRunEndTime            = self.appSettings.vRunEndTime;
+
         self.initTableWidget();
         self.tableWidgetClear();
 
@@ -148,11 +154,10 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
         if self.kwargs.get("mode", "stage") == "debug":
             self.myThread.start();
 
-        if datetime.datetime.now().strftime("%H%M") < "1600":
-            self.showDownTimer = QtCore.QTimer();
-            self.showDownTimer.setInterval(1000);
-            self.showDownTimer.timeout.connect(self.shutdown);
-            self.showDownTimer.start();
+        self.showDownTimer = QtCore.QTimer();
+        self.showDownTimer.setInterval(1000);
+        self.showDownTimer.timeout.connect(self.shutdown);
+        self.showDownTimer.start();
 
         if self.appSettings.vAutoLogin:
             self.actLoginSlot();
@@ -182,7 +187,6 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
     def shutdown(self):
         #print(datetime.datetime.now(), datetime.datetime.now().strftime("%H%M"), str(int(self.nt) + 1));
         #if datetime.datetime.now().strftime("%H%M") == str(int(self.nt) + 1):
-
         if datetime.datetime.now().strftime("%H%M") == "1600":
             self.myStrategy.isRun = False;
             self.showDownTimer.stop();
@@ -927,9 +931,9 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
         vTotalProfitRate = vTotalProfit / totalBuyAmount * 100;
 
         #계좌 당일 손실/수익종료, 당일청산 설정에 따른 자동매매 종료
-        if (self.appSettings.vAccountPlusEndActive  and self.gbMyAccount.vTodayProfitRate >= self.appSettings.vAccountPlusEnd ) or \
-           (self.appSettings.vAccountMinusEndActive and self.gbMyAccount.vTodayProfitRate <= self.appSettings.vAccountMinusEnd) or \
-           (self.appSettings.vDayClearActive        and self.appSettings.vRunEndTime.toString("hhmm") < datetime.datetime.now().strftime("%H%M")):
+        if (self.vAccountPlusEndActive  and self.gbMyAccount.vTodayProfitRate >= self.vAccountPlusEnd ) or \
+           (self.vAccountMinusEndActive and self.gbMyAccount.vTodayProfitRate <= self.vAccountMinusEnd) or \
+           (self.vDayClearActive        and self.vRunEndTime.toString("hhmm") < datetime.datetime.now().strftime("%H%M")):
             
             self.gbMyAccount.uValue1.setEnabled(True);
             self.cbConUp.setEnabled(True);
@@ -947,10 +951,10 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
             #계좌를 전부 매도 후 종료할지는.. 고민...
             self.myStrategy.stockSellAll();
 
-            if vTotalProfitRate >= self.appSettings.vAccountPlusEnd:
+            if vTotalProfitRate >= self.vAccountPlusEnd:
                 QtWidgets.QMessageBox.about(self, "계좌", "계좌 수익율에 도달하여 자동매매를 종료합니다.");
-            elif vTotalProfitRate <= self.appSettings.vAccountMinusEnd:
-                QtWidgets.QMitemsessageBox.about(self, "계좌", "계좌 손실율에 도달하여 자동매매를 종료합니다.");
+            elif vTotalProfitRate <= self.vAccountMinusEnd:
+                QtWidgets.QMessageBox.about(self, "계좌", "계좌 손실율에 도달하여 자동매매를 종료합니다.");
             else:
                 QtWidgets.QMessageBox.about(self, "계좌", "당일 청산 자동매매를 종료합니다.");
         
@@ -959,6 +963,7 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
         if obj["type"] == "D":#종목이탈
             #분석을 위해 계속 검색된 항목은 계속 수신받기 때문에 삭제할 필요가 없음
             #self.twConStocks.delRows(obj["stockCode"]);#실시간 수신 해지는 KiwoomAPI에서 처리함
+            #시간이 지날수록 실시간 정보 수신 받는 종목이 늘어나면서.. 부하가 커지네..(이탈 기준을 따로 만들어야 할꺼 같음)
             pass;
     
     #처리내역 & 상태바에 프로그램 메세지를 출력
@@ -973,7 +978,7 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
         msg += ", {0}".format(self.preFormat(obj["sRQName"] if obj["sRQName"] != "" else obj["sTrCode"], 30, "<"));
         msg += ", {0}".format(obj["sMsg"]);
         
-        self.tbConsole.append(msg);
+        #self.tbConsole.append(msg);
         self.statusbar.showMessage(msg, 5000);
     
     #Splitter 크기 조절 이벤트 슬롯
@@ -1001,24 +1006,26 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
                 if reply == QtWidgets.QMessageBox.Yes:
                     #속도가 너무 느려.. 종료시에만 저장하도록 수정
                     self.appSettings.sync();
-                    telegramMsg  = "#{0}\r\n".format(datetime.datetime.now());
-                    telegramMsg += "<strong>자동매매</strong>가 종료되었습니다.\r\n".format(datetime.datetime.now());
-                    telegramMsg += "<strong>수익보고</strong>\r\n";
-                    telegramMsg += "-계좌:{0}\r\n".format(self.gbMyAccount.vTotalProfit.text());
-                    telegramMsg += "-당일:{0}".format(self.gbMyAccount.vTodayProfit.text());
-                    asyncio.run(self.sendMessage(telegramMsg));
+                    if self.gbMyAccount.uValue1.currentData() != "":
+                        telegramMsg  = "#{0}\r\n".format(datetime.datetime.now());
+                        telegramMsg += "<strong>자동매매</strong>가 종료되었습니다.\r\n".format(datetime.datetime.now());
+                        telegramMsg += "<strong>수익보고</strong>\r\n";
+                        telegramMsg += "-계좌:{0}\r\n".format(self.gbMyAccount.vTotalProfit.text());
+                        telegramMsg += "-당일:{0}".format(self.gbMyAccount.vTodayProfit.text());
+                        asyncio.run(self.sendMessage(telegramMsg));
                     self.close();
                 else:
                     event.ignore();
             else:
                 #속도가 너무 느려.. 종료시에만 저장하도록 수정
                 self.appSettings.sync();
-                telegramMsg  = "#{0}\r\n".format(datetime.datetime.now());
-                telegramMsg += "<strong>자동매매</strong>가 종료되었습니다.\r\n".format(datetime.datetime.now());
-                telegramMsg += "<strong>수익보고</strong>\r\n";
-                telegramMsg += "-계좌:{0}\r\n".format(self.gbMyAccount.vTotalProfit.text());
-                telegramMsg += "-당일:{0}".format(self.gbMyAccount.vTodayProfit.text());
-                asyncio.run(self.sendMessage(telegramMsg));
+                if self.gbMyAccount.uValue1.currentData() != "":
+                    telegramMsg  = "#{0}\r\n".format(datetime.datetime.now());
+                    telegramMsg += "<strong>자동매매</strong>가 종료되었습니다.\r\n".format(datetime.datetime.now());
+                    telegramMsg += "<strong>수익보고</strong>\r\n";
+                    telegramMsg += "-계좌:{0}\r\n".format(self.gbMyAccount.vTotalProfit.text());
+                    telegramMsg += "-당일:{0}".format(self.gbMyAccount.vTodayProfit.text());
+                    asyncio.run(self.sendMessage(telegramMsg));
                 self.close();
         except Exception as e:
             print(e);
