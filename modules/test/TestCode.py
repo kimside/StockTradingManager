@@ -66,18 +66,20 @@ class MyThread(QtCore.QThread):
     def run(self):
         while True:
             while self.isRun:
-                newPrice = random.randrange(1000,10000);
-                stockLength = random.randrange(0, len(self.stocks) -1);
+                #newPrice = random.randrange(1000,10000);
+                #stockLength = random.randrange(0, len(self.stocks) -1);
 
                 obj = {
                     "sRealType": "주식체결",
-                    "f9001": list(self.stocks)[stockLength][0],
-                    "f302" : list(self.stocks)[stockLength][1],
+                    #"f9001": list(self.stocks)[stockLength][0],
+                    #"f302" : list(self.stocks)[stockLength][1],
+                    "f9001": "123456",
+                    "f302" : "테스트",
                     "f307" : "10000",
                     "f920" : "4000;7000;8000",
                     #"f920" : "4000",
                     "f20" : "083739",
-                    "f10" : str(newPrice),
+                    "f10" : "10000",
                     "f11" : "+400",
                     "f12" : "+2.21",
                     "f27" : "-0",
@@ -105,6 +107,6 @@ class MyThread(QtCore.QThread):
 
                 time.sleep(self.sleepTime);
                 self.tSignal.emit(obj);
-            time.sleep(0.0005);
+            time.sleep(0.0001);
     def stop(self):
         self.isRun = False;

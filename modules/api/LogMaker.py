@@ -389,7 +389,12 @@ class LogMaker:
     def preFormat(self, string, width=None, align="<", fill=" "):
         string = str(string)
         width = width if width != None else len(string);
-        count = (width - sum(1 + (unicodedata.east_asian_width(c) in "WF") for c in string));
+        #count = (width - sum(1 + (unicodedata.east_asian_width(c) in "WF") for c in string));
+        count = [];
+        for char in string:
+            count.append(2 if ord('가') <= ord(char) <= ord('힣') else 1);
+        count = width - sum(count);
+
         return {
             ">": lambda s: fill * count + s, # lambda 매개변수 : 표현식
             "<": lambda s: s + fill * count,
@@ -399,41 +404,41 @@ class LogMaker:
 
     def logCondition(self, obj):
         logFile = ("logging/{0}/{1}/{2}.log").format(self.today_YYYYMMDD, "condition", "onReceiveRealCondition");
-        writeText = "[{0}:{1}]".format(datetime.datetime.now(), "onReceiveRealCondition");    
+        writeText = ["[{0}:{1}]".format(datetime.datetime.now(), "onReceiveRealCondition")];
         for key in obj:
-            writeText = "".join([writeText, self.getFidLogText(key, obj[key])]);
-        
+            writeText.append(self.getFidLogText(key, obj[key]));
+        writeText.append( + "\n");
         with open(logFile, "a", encoding="UTF-8", ) as fileData:
-            fileData.writelines(writeText + "\n");
+            fileData.writelines("".join(writeText));
     
     def logKiwoom(self, obj):
         logFile = ("logging/{0}/{1}/{2}.log").format(self.today_YYYYMMDD, "kiwoom", "onReceiveMsg");
-        writeText = "[{0}:{1}]".format(datetime.datetime.now(), "onReceiveMsg");    
+        writeText = ["[{0}:{1}]".format(datetime.datetime.now(), "onReceiveMsg")];
         for key in obj:
-            writeText = "".join([writeText, self.getFidLogText(key, obj[key])]);
-        
+            writeText.append(self.getFidLogText(key, obj[key]));
+        writeText.append( + "\n");
         with open(logFile, "a", encoding="UTF-8", ) as fileData:
-            fileData.writelines(writeText + "\n");
+            fileData.writelines("".join(writeText));
     
     def logOrder(self, obj):
         fileDiv = "sendOrder({0})".format(self.nOrderType[obj["f905"]]);
         logFile = ("logging/{0}/{1}/{2}.log").format(self.today_YYYYMMDD, "order", fileDiv);
-        writeText = "[{0}:{1}]".format(datetime.datetime.now(), fileDiv);    
+        writeText = ["[{0}:{1}]".format(datetime.datetime.now(), fileDiv)];
         for key in obj:
-            writeText = "".join([writeText, self.getFidLogText(key, obj[key])]);
-            
+            writeText.append(self.getFidLogText(key, obj[key]));
+        writeText.append( + "\n");
         with open(logFile, "a", encoding="UTF-8", ) as fileData:
-            fileData.writelines(writeText + "\n");
+            fileData.writelines("".join(writeText));
     
     def logReal(self, obj):
         fileDiv = "onReceiveRealData({0})".format(obj["sRealType"]);
         logFile = ("logging/{0}/{1}/{2}.log").format(self.today_YYYYMMDD, "real", fileDiv);
-        writeText = "[{0}:{1}]".format(datetime.datetime.now(), fileDiv);
+        writeText = ["[{0}:{1}]".format(datetime.datetime.now(), fileDiv)];
         for key in obj:
-            writeText = "".join([writeText, self.getFidLogText(key, obj[key])]);
-            
+            writeText.append(self.getFidLogText(key, obj[key]));
+        writeText.append( + "\n");
         with open(logFile, "a", encoding="UTF-8", ) as fileData:
-            fileData.writelines(writeText + "\n");
+            fileData.writelines("".join(writeText));
     
     def logChejan(self, obj):
         obj["f9001"] = obj["f9001"][-6:];#종목코드
@@ -462,9 +467,9 @@ class LogMaker:
                 fileDiv = "onReceiveChejanData(etc)";
 
         logFile = ("logging/{0}/{1}/{2}.log").format(self.today_YYYYMMDD, "chejan", fileDiv);
-        writeText = "[{0}:{1}]".format(datetime.datetime.now(), fileDiv);
+        writeText = ["[{0}:{1}]".format(datetime.datetime.now(), fileDiv)];
         for key in obj:
-            writeText = "".join([writeText, self.getFidLogText(key, obj[key])]);
-        
+            writeText.append(self.getFidLogText(key, obj[key]));
+        writeText.append( + "\n");
         with open(logFile, "a", encoding="UTF-8", ) as fileData:
-            fileData.writelines(writeText + "\n");
+            fileData.writelines("".join(writeText));

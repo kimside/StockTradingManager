@@ -43,7 +43,7 @@ if __name__ == "__main__":
     ];
     """
     logFiles = [
-        "D:/workspace/StockTrading/logging/20231106/real/onReceiveRealData(주식체결).log",
+        "D:/workspace/StockTrading/logging/20231107/stress_20231107.log",
     ];
 
     for logFile in logFiles:
@@ -62,7 +62,7 @@ if __name__ == "__main__":
 
             p = 0;
             for i in sorted_dict:
-                if p == 1:
+                if p == 5:
                     break;
                 print(logFile, i)
                 p +=1;

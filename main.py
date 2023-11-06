@@ -147,7 +147,8 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
         #    "slAddBuy"    : 0,
         #};
         #self.appSettings.setValue("myStrategy", self.appSettings.myStrategy);
-        
+        #self.logFile = open(file="logging/" + datetime.datetime.now().strftime("%Y%m%d") + "/stress_" + datetime.datetime.now().strftime("%Y%m%d") + ".log", mode="a", encoding="UTF-8", );
+
         self.myThread = MyThread(self);
         self.myThread.tSignal.connect(self.stockSignalSlot);
         
@@ -503,38 +504,75 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
     
     #실시간 수신 데이터 Grid에 반영
     def stockSignalSlot(self, obj):
-        #writeText =  "[{0}:{1}]"          .format(datetime.datetime.now(), "buySellPrice");
-        #writeText += ", 주문번호({0})"    .format(self.preFormat(obj["sRealType"],  7, "<"));
-        #writeText += ", 주문번호({0})"    .format(self.preFormat(obj["f9001"    ],  7, "<"));
-        #writeText += ", 종목명({0})"      .format(self.preFormat(obj["f302"     ], 20, "<"));
-        #writeText += ", 종목코드({0})"    .format(self.preFormat(obj["f307"     ],  6, ">"));
-        #writeText += ", 매매구분({0})"    .format(self.preFormat(obj["f920"     ],  8, ">"));
-        #writeText += ", 주문가격({0})"    .format(self.preFormat(obj["f20"      ],  7, ">"));
-        #writeText += ", 주문수량({0})"    .format(self.preFormat(obj["f10"      ],  7, ">"));
-        #writeText += ", 체결수량({0})"    .format(self.preFormat(obj["f11"      ],  3, ">"));
-        #writeText += ", 단위체결가({0})"  .format(self.preFormat(obj["f12"      ],  7, ">"));
-        #writeText += ", 단위체결량({0})"  .format(self.preFormat(obj["f27"      ],  7, ">"));
-        #writeText += ", 주문번호({0})"    .format(self.preFormat(obj["f28"      ],  7, "<"));
-        #writeText += ", 종목명({0})"      .format(self.preFormat(obj["f15"      ], 20, "<"));
-        #writeText += ", 종목코드({0})"    .format(self.preFormat(obj["f13"      ],  6, ">"));
-        #writeText += ", 매매구분({0})"    .format(self.preFormat(obj["f14"      ],  8, ">"));
-        #writeText += ", 주문가격({0})"    .format(self.preFormat(obj["f16"      ],  7, ">"));
-        #writeText += ", 주문수량({0})"    .format(self.preFormat(obj["f17"      ],  7, ">"));
-        #writeText += ", 체결수량({0})"    .format(self.preFormat(obj["f18"      ],  3, ">"));
-        #writeText += ", 단위체결가({0})"  .format(self.preFormat(obj["f25"      ],  7, ">"));
-        #writeText += ", 단위체결량({0})"  .format(self.preFormat(obj["f26"      ],  7, ">"));
-        #writeText += ", 주문번호({0})"    .format(self.preFormat(obj["f29"      ],  7, "<"));
-        #writeText += ", 종목명({0})"      .format(self.preFormat(obj["f30"      ], 20, "<"));
-        #writeText += ", 종목코드({0})"    .format(self.preFormat(obj["f31"      ],  6, ">"));
-        #writeText += ", 매매구분({0})"    .format(self.preFormat(obj["f32"      ],  8, ">"));
-        #writeText += ", 주문가격({0})"    .format(self.preFormat(obj["f228"     ],  7, ">"));
-        #writeText += ", 주문수량({0})"    .format(self.preFormat(obj["f311"     ],  7, ">"));
-        #writeText += ", 체결수량({0})"    .format(self.preFormat(obj["f290"     ],  3, ">"));
-        #writeText += ", 단위체결가({0})"  .format(self.preFormat(obj["f691"     ],  7, ">"));
-        #writeText += ", 단위체결량({0})"  .format(self.preFormat(obj["f567"     ],  7, ">"));
-        #writeText += ", 주문번호({0})"    .format(self.preFormat(obj["f568"     ],  7, "<"));
-        #writeText += ", 종목명({0})"      .format(self.preFormat(obj["f851"     ], 20, "<"));
+        #writeText = ["[{0}:{1}]"          .format(datetime.datetime.now(), "buySellPrice")];
+        #writeText.append(", 주문번호({0})"    .format(obj["sRealType"]));
+        #writeText.append(", 주문번호({0})"    .format(obj["f9001"    ]));
+        #writeText.append(", 종목명({0})"      .format(obj["f302"     ]));
+        #writeText.append(", 종목코드({0})"    .format(obj["f307"     ]));
+        #writeText.append(", 매매구분({0})"    .format(obj["f920"     ]));
+        #writeText.append(", 주문가격({0})"    .format(obj["f20"      ]));
+        #writeText.append(", 주문수량({0})"    .format(obj["f10"      ]));
+        #writeText.append(", 체결수량({0})"    .format(obj["f11"      ]));
+        #writeText.append(", 단위체결가({0})"  .format(obj["f12"      ]));
+        #writeText.append(", 단위체결량({0})"  .format(obj["f27"      ]));
+        #writeText.append(", 주문번호({0})"    .format(obj["f28"      ]));
+        #writeText.append(", 종목명({0})"      .format(obj["f15"      ]));
+        #writeText.append(", 종목코드({0})"    .format(obj["f13"      ]));
+        #writeText.append(", 매매구분({0})"    .format(obj["f14"      ]));
+        #writeText.append(", 주문가격({0})"    .format(obj["f16"      ]));
+        #writeText.append(", 주문수량({0})"    .format(obj["f17"      ]));
+        #writeText.append(", 체결수량({0})"    .format(obj["f18"      ]));
+        #writeText.append(", 단위체결가({0})"  .format(obj["f25"      ]));
+        #writeText.append(", 단위체결량({0})"  .format(obj["f26"      ]));
+        #writeText.append(", 주문번호({0})"    .format(obj["f29"      ]));
+        #writeText.append(", 종목명({0})"      .format(obj["f30"      ]));
+        #writeText.append(", 종목코드({0})"    .format(obj["f31"      ]));
+        #writeText.append(", 매매구분({0})"    .format(obj["f32"      ]));
+        #writeText.append(", 주문가격({0})"    .format(obj["f228"     ]));
+        #writeText.append(", 주문수량({0})"    .format(obj["f311"     ]));
+        #writeText.append(", 체결수량({0})"    .format(obj["f290"     ]));
+        #writeText.append(", 단위체결가({0})"  .format(obj["f691"     ]));
+        #writeText.append(", 단위체결량({0})"  .format(obj["f567"     ]));
+        #writeText.append(", 주문번호({0})"    .format(obj["f568"     ]));
+        #writeText.append(", 종목명({0})"      .format(obj["f851"     ]));
+        #writeText.append("\n");
 
+        #writeText = ["[{0}:{1}]"          .format(datetime.datetime.now(), "buySellPrice")];
+        #writeText.append(", 주문번호({0})"    .format(self.preFormat(obj["sRealType"],  7, "<")));
+        #writeText.append(", 주문번호({0})"    .format(self.preFormat(obj["f9001"    ],  7, "<")));
+        #writeText.append(", 종목명({0})"      .format(self.preFormat(obj["f302"     ], 20, "<")));
+        #writeText.append(", 종목코드({0})"    .format(self.preFormat(obj["f307"     ],  6, ">")));
+        #writeText.append(", 매매구분({0})"    .format(self.preFormat(obj["f920"     ],  8, ">")));
+        #writeText.append(", 주문가격({0})"    .format(self.preFormat(obj["f20"      ],  7, ">")));
+        #writeText.append(", 주문수량({0})"    .format(self.preFormat(obj["f10"      ],  7, ">")));
+        #writeText.append(", 체결수량({0})"    .format(self.preFormat(obj["f11"      ],  3, ">")));
+        #writeText.append(", 단위체결가({0})"  .format(self.preFormat(obj["f12"      ],  7, ">")));
+        #writeText.append(", 단위체결량({0})"  .format(self.preFormat(obj["f27"      ],  7, ">")));
+        #writeText.append(", 주문번호({0})"    .format(self.preFormat(obj["f28"      ],  7, "<")));
+        #writeText.append(", 종목명({0})"      .format(self.preFormat(obj["f15"      ], 20, "<")));
+        #writeText.append(", 종목코드({0})"    .format(self.preFormat(obj["f13"      ],  6, ">")));
+        #writeText.append(", 매매구분({0})"    .format(self.preFormat(obj["f14"      ],  8, ">")));
+        #writeText.append(", 주문가격({0})"    .format(self.preFormat(obj["f16"      ],  7, ">")));
+        #writeText.append(", 주문수량({0})"    .format(self.preFormat(obj["f17"      ],  7, ">")));
+        #writeText.append(", 체결수량({0})"    .format(self.preFormat(obj["f18"      ],  3, ">")));
+        #writeText.append(", 단위체결가({0})"  .format(self.preFormat(obj["f25"      ],  7, ">")));
+        #writeText.append(", 단위체결량({0})"  .format(self.preFormat(obj["f26"      ],  7, ">")));
+        #writeText.append(", 주문번호({0})"    .format(self.preFormat(obj["f29"      ],  7, "<")));
+        #writeText.append(", 종목명({0})"      .format(self.preFormat(obj["f30"      ], 20, "<")));
+        #writeText.append(", 종목코드({0})"    .format(self.preFormat(obj["f31"      ],  6, ">")));
+        #writeText.append(", 매매구분({0})"    .format(self.preFormat(obj["f32"      ],  8, ">")));
+        #writeText.append(", 주문가격({0})"    .format(self.preFormat(obj["f228"     ],  7, ">")));
+        #writeText.append(", 주문수량({0})"    .format(self.preFormat(obj["f311"     ],  7, ">")));
+        #writeText.append(", 체결수량({0})"    .format(self.preFormat(obj["f290"     ],  3, ">")));
+        #writeText.append(", 단위체결가({0})"  .format(self.preFormat(obj["f691"     ],  7, ">")));
+        #writeText.append(", 단위체결량({0})"  .format(self.preFormat(obj["f567"     ],  7, ">")));
+        #writeText.append(", 주문번호({0})"    .format(self.preFormat(obj["f568"     ],  7, "<")));
+        #writeText.append(", 종목명({0})"      .format(self.preFormat(obj["f851"     ], 20, "<")));
+        #writeText.append("\n");
+        
+        #with open(file="logging/" + datetime.datetime.now().strftime("%Y%m%d") + "/stress_" + datetime.datetime.now().strftime("%Y%m%d") + ".log", mode="a", encoding="UTF-8", buffering=1) as dataFile:
+        #    dataFile.write("".join(writeText));
+        
         sScrNoList = obj["f920"].split(";") \
                      if "f920" in obj else  \
                      [];

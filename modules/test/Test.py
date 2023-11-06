@@ -14,6 +14,9 @@ if __name__ == "__main__":
     endTime = time.perf_counter();
     print(f"time elapsed : {int(round((endTime - startTime) * 1000))}ms");
     """
-    a = "가나다asdfg마바사";
-    i = a.index("다")
-    print(a[i: i + 1])
+    
+    startTime = time.perf_counter();
+    for i in range(1000000):
+        t = datetime.datetime.now();
+    endTime = time.perf_counter();
+    print(f"time elapsed : {int(round((endTime - startTime) * 1000))}ms");
