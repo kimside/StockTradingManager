@@ -376,12 +376,13 @@ class KiwoomAPI(LogMaker, metaclass=Singleton):
             #self.setRealReg("8000", sCode[-6:]);
             pass;
         
-        self.apiMsgSignal.emit({
-            "sScrNo" : "9999",
-            "sRQName": "시스템",
-            "sTrCode": "",
-            "sMsg"   : ("조건검색결과({0})에 {1}: {2}({3})").format(sConName, "(+)종목편입" if sType == "I" else "(-)종목이탈", masterCodeName, sCode[-6:]),
-        });
+        #수신 빈도가 높아서 임시로 보류
+        #self.apiMsgSignal.emit({
+        #    "sScrNo" : "9999",
+        #    "sRQName": "시스템",
+        #    "sTrCode": "",
+        #    "sMsg"   : ("조건검색결과({0})에 {1}: {2}({3})").format(sConName, "(+)종목편입" if sType == "I" else "(-)종목이탈", masterCodeName, sCode[-6:]),
+        #});
 
         self.logCondition({
             "conId": sConId,
@@ -961,11 +962,11 @@ class KiwoomAPI(LogMaker, metaclass=Singleton):
             obj["f10"] = obj["f10"].replace("-", "");
         
         #주식우선호가(매수/매도 1호가 가격이 변경되면 전달) 데이터가 너무 많이 온다.. 화면 버벅임..
-        if not sRealType in ["주식우선호가", "장시작시간"]:
-            #사용하지 않는 실시간 데이터는 로그로 저장하지 않는다(부하가 많을때 처리량이 밀림)
-            if sRealType in ["주식체결"]:
-                self.stockSignal.emit(obj);
-                self.logReal(obj);
+        #사용하지 않는 실시간 데이터는 로그로 저장하지 않는다(부하가 많을때 처리량이 밀림)
+        if sRealType in ["주식체결", "장시작시간"]:
+            self.stockSignal.emit(obj);
+            #틱 거래정보 로그를 남길 필요가 있을까??
+            #self.logReal(obj);
     
     #키움서버에서 수신된 메세지
     #sScrNo,  //화면번호

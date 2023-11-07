@@ -429,6 +429,8 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
                 for index, value in enumerate(opt10075.__getitem__("mField02")):
                     if value != "":
                         chejanTime = opt10075.__getitem__("mField15")[index];
+                        bgCol = 0 if opt10075.__getitem__("mField13")[index] in ["매수취소", "매수정정", "매도취소", "매도정정"] else -1;
+                        bgCol = 1 if opt10075.__getitem__("mField13")[index] in ["+매수"] else bgCol;
                         row = {
                             "chejanTime" : dt.replace(hour=int(chejanTime[:2]), minute=int(chejanTime[2:4]), second=int(chejanTime[-2:])),
                             "orderNo"    : opt10075.__getitem__("mField02")[index],
@@ -443,7 +445,7 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
                             "missCount"  : opt10075.__getitem__("mField10")[index],
                             "chejanGb"   : opt10075.__getitem__("mField14")[index],
                             "oriOrderNo" : opt10075.__getitem__("mField12")[index],
-                            "bgCol"      : 1 if opt10075.__getitem__("mField13")[index] == "+매수" else -1,
+                            "bgCol"      : bgCol,
                         };
 
                         #미체결잔고 조회시 접수상태인것은 아직 처리가 되지 않은 항목으로 계좌에 반영해야한다.
@@ -652,6 +654,9 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
     def addChejanSlot(self, obj):
         if obj["gubun"] == "0" and obj["f919"] == "0":#접수갱신/체결갱신, 거부사유가 0일경우
             self.setRealReg("7000", obj["f9001"]);
+            bgCol = 0 if obj["f905"] in ["매수취소", "매수정정", "매도취소", "매도정정"] else -1;
+            bgCol = 1 if obj["f905"] in ["+매수"] else bgCol;
+            
             dt = datetime.datetime.now();
             chejan = {
                 "chejanTime" : dt.replace(hour=int(obj["f908"][:2]), minute=int(obj["f908"][2:4]), second=int(obj["f908"][-2:])),
@@ -670,18 +675,9 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
                 "chejanGb"   : obj["f906" ], #매매구분(보통)
                 "oriOrderNo" : obj["f904" ], #원주문번호
                 "screenNo"   : obj["f920" ], #화면번호
-                "bgCol"      : 1 if obj["f905"] == "+매수" else -1, #매수/매도 배경색 구분
+                "bgCol"      : bgCol       , #매수/매도/취소/정정 배경색 구분
             };
             
-            tradeStock = self.calcStock({
-                "stockCode"     : chejan["stockCode" ],
-                "stockName"     : chejan["stockName" ],
-                "averagePrice"  : chejan["unitPrice" ] if chejan["unitPrice"] != "" else chejan["nowPrice"  ],
-                "nowPrice"      : chejan["unitPrice" ] if chejan["unitPrice"] != "" else chejan["nowPrice"  ],
-                "stockCount"    : chejan["unitCount" ] if chejan["unitCount"] != "" else chejan["orderCount"],
-                "reminingCount" : chejan["orderCount"],
-            });
-
             #우선 체결잔고/체결잔고이력 QTableWidget에 넣는다.(단 취소, 정정건은 체결잔고에 넣지 않는다.)
             if not chejan["hogaGb"] in ["매수취소", "매도취소", "매수정정", "매도정정"]:
                 #에코 데이터.. 주문정정, 주문취소시.. +매수, -매도 마지막 데이터를 에코형식으로 다시 전송해준다..
@@ -697,14 +693,14 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
             #(분할로 매수될 경우 단위체결가가 다르기 때문에.. 매수 접수된 금액기준으로 계산하여 세금 반영, 때문에 오차가 발생할 수 있다.)
             #ex) 1700원을 10주 매도하는데 1개씩 매도체결될 경우 각각의 수수료와 세금은 없지만.. 매도주문건 전체로 보면.. 17000원에 대한.. 수수료와 세금이 존재한다.
             #    단 매도주문을 1주씩 따로따로 하면.. 수수료와 세금도 각각 개별 주문별로 따로 처리해서 상관없다.. (초당 sendOrder 5건 제한으로... 아쉽...)
-            if chejan["hogaGb"] == "매수정정":
+            if chejan["hogaGb"] == "접수" and chejan["hogaGb"] == "매수정정":
                 #[+매수] 주문의 수량을 정정한다...(부분체결 진행중이면???)
                 chejanStocks = self.twChejanStocks.getRowDatas(chejan["oriOrderNo"]);
                 for chejanStock in chejanStocks:
                     chejanStock["orderCount"] = int(chejan["orderCount"]);
                     self.twChejanStocks.addRows(chejanStock);
                 
-            elif chejan["hogaGb"] == "매도정정":
+            elif chejan["hogaGb"] == "접수" and chejan["hogaGb"] == "매도정정":
                 #[-매도] 주문의 수량을 정정한다...(부분체결 진행중이면???)
                 #보유주식의 현재 주문가능수량을 넘지않게.... 그리고 기존 주문보다 적게 변경한다면 주문가능수량은 보유주식의 주문가능수량에 반영
                 chejanStocks = self.twChejanStocks.getRowDatas(chejan["oriOrderNo"]);
@@ -718,7 +714,7 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
                     chejanStock["orderCount"] = int(chejan["orderCount"]);
                     self.twChejanStocks.addRows(chejanStock);
                 
-            elif chejan["hogaGb"] == "매수취소":
+            elif chejan["hogaGb"] == "접수" and chejan["hogaGb"] == "매수취소":
                 """
                 3001: 신규매수,
                 3011: TrailingStop(매수) 손실 추가매수,
@@ -733,11 +729,11 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
                         myStrategy["tsAddBuy"] -= 1;
                     else:
                         myStrategy["slAddBuy"] -= 1;
-
+                
                 #원주문번호를 찾아 해당 주문건을 삭제한다.
                 self.twChejanStocks.delRows(chejan["oriOrderNo"]);
                 
-            elif chejan["hogaGb"] == "매도취소":
+            elif chejan["hogaGb"] == "접수" and chejan["hogaGb"] == "매도취소":
                 """
                 3012: TrailingStop(매도) 수익달성,
                 3013: TrailingStop(매도) 수익보존,
@@ -756,14 +752,23 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
                 #계좌 보유주식 주문가능수량 업데이트(부분 체결이 되었을수도 있기에..  확인해야한다.)
                 myStocks = self.twMyStocks.getRowDatas(chejan["stockCode"]);
                 for myStock in myStocks:
-                    #취소주문시 수량을 미체결 수량으로 입력해서 여기에선 주문수량으로 받는다.
-                    myStock["reminingCount"] += int(chejan["orderCount"]);
+                    #취소주문시 미체결 수량을 주문가능에 더한다.
+                    myStock["reminingCount"] += int(chejan["missCount"]);
                     self.twMyStocks.addRows(myStock);
                 
                 #원주문번호를 찾아 해당 주문건을 삭제한다.
                 self.twChejanStocks.delRows(chejan["oriOrderNo"]);
 
             elif chejan["orderStatus"] == "체결":
+                tradeStock = self.calcStock({
+                    "stockCode"     : chejan["stockCode" ],
+                    "stockName"     : chejan["stockName" ],
+                    "averagePrice"  : chejan["unitPrice" ] if chejan["unitPrice"] != "" else chejan["nowPrice"  ],
+                    "nowPrice"      : chejan["unitPrice" ] if chejan["unitPrice"] != "" else chejan["nowPrice"  ],
+                    "stockCount"    : chejan["unitCount" ] if chejan["unitCount"] != "" else chejan["orderCount"],
+                    "reminingCount" : chejan["orderCount"],
+                });
+
                 accountInfo = self.gbMyAccount.getAccountInfo();
 
                 if chejan["hogaGb"] == "+매수":#매수(체결)가 이상없이 체결되었다면 매수가능금액(-) 업데이트
@@ -965,8 +970,11 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
             "vTotalNowAmount" : totalNowAmount,
         });
         
-        vTotalProfit     = totalNowAmount - totalBuyAmount;
-        vTotalProfitRate = vTotalProfit / totalBuyAmount * 100;
+        vTotalProfit     = 0;
+        vTotalProfitRate = 0;
+        if totalBuyAmount != 0:
+            vTotalProfit     = totalNowAmount - totalBuyAmount;
+            vTotalProfitRate = vTotalProfit / totalBuyAmount * 100;
 
         #계좌 당일 손실/수익종료, 당일청산 설정에 따른 자동매매 종료
         if (self.vAccountPlusEndActive  and self.gbMyAccount.vTodayProfitRate >= self.vAccountPlusEnd ) or \
@@ -1016,7 +1024,7 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
         msg += ", {0}".format(self.preFormat(obj["sRQName"] if obj["sRQName"] != "" else obj["sTrCode"], 30, "<"));
         msg += ", {0}".format(obj["sMsg"]);
         
-        #self.tbConsole.append(msg);
+        self.tbConsole.append(msg);
         self.statusbar.showMessage(msg, 5000);
     
     #Splitter 크기 조절 이벤트 슬롯

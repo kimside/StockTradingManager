@@ -407,7 +407,7 @@ class LogMaker:
         writeText = ["[{0}:{1}]".format(datetime.datetime.now(), "onReceiveRealCondition")];
         for key in obj:
             writeText.append(self.getFidLogText(key, obj[key]));
-        writeText.append( + "\n");
+        writeText.append("\n");
         with open(logFile, "a", encoding="UTF-8", ) as fileData:
             fileData.writelines("".join(writeText));
     
@@ -416,7 +416,7 @@ class LogMaker:
         writeText = ["[{0}:{1}]".format(datetime.datetime.now(), "onReceiveMsg")];
         for key in obj:
             writeText.append(self.getFidLogText(key, obj[key]));
-        writeText.append( + "\n");
+        writeText.append("\n");
         with open(logFile, "a", encoding="UTF-8", ) as fileData:
             fileData.writelines("".join(writeText));
     
@@ -426,7 +426,7 @@ class LogMaker:
         writeText = ["[{0}:{1}]".format(datetime.datetime.now(), fileDiv)];
         for key in obj:
             writeText.append(self.getFidLogText(key, obj[key]));
-        writeText.append( + "\n");
+        writeText.append("\n");
         with open(logFile, "a", encoding="UTF-8", ) as fileData:
             fileData.writelines("".join(writeText));
     
@@ -436,7 +436,7 @@ class LogMaker:
         writeText = ["[{0}:{1}]".format(datetime.datetime.now(), fileDiv)];
         for key in obj:
             writeText.append(self.getFidLogText(key, obj[key]));
-        writeText.append( + "\n");
+        writeText.append("\n");
         with open(logFile, "a", encoding="UTF-8", ) as fileData:
             fileData.writelines("".join(writeText));
     
@@ -470,6 +470,6 @@ class LogMaker:
         writeText = ["[{0}:{1}]".format(datetime.datetime.now(), fileDiv)];
         for key in obj:
             writeText.append(self.getFidLogText(key, obj[key]));
-        writeText.append( + "\n");
+        writeText.append("\n");
         with open(logFile, "a", encoding="UTF-8", ) as fileData:
             fileData.writelines("".join(writeText));

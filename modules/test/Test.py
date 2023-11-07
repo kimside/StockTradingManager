@@ -14,9 +14,4 @@ if __name__ == "__main__":
     endTime = time.perf_counter();
     print(f"time elapsed : {int(round((endTime - startTime) * 1000))}ms");
     """
-    
-    startTime = time.perf_counter();
-    for i in range(1000000):
-        t = datetime.datetime.now();
-    endTime = time.perf_counter();
-    print(f"time elapsed : {int(round((endTime - startTime) * 1000))}ms");
+    print("TrailingStop 추가목표가 달성매도({0})".format(1 + 1 if 1 > 2 else "Max"));

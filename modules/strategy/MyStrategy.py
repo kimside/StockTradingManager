@@ -98,7 +98,7 @@ class MyStrategy(AbstractStrategy):
                     self.stopLoss(obj, myStock);
     
     #주문취소
-    def orderCancel(self, stock):
+    def orderCancel(self, chejanStock):
         """
         3001: 신규매수,
         3002: 신규매도,
@@ -110,17 +110,17 @@ class MyStrategy(AbstractStrategy):
         3022: StopLoss(매도) 수익달성,
         3023: StopLoss(매도) 손실 전량매도,
         """
-        orderCount = stock["orderCount"] if stock["orderStatus"] == "접수" else stock["missCount"];
+        orderCount = chejanStock["orderCount"] if chejanStock["orderStatus"] == "접수" else chejanStock["missCount"];
         if orderCount > 0:
             result = self.sendOrder({
-                "nOrderType" : 3 if stock["hogaGb"] == "+매수" else 4,
-                "sScrNo"     : stock["screenNo"  ],
-                "sCode"      : stock["stockCode" ], #주문유형 1:신규매수, 2:신규매도 3:매수취소, 4:매도취소, 5:매수정정, 6:매도정정
-                "nQty"       : orderCount         , #접수인 상태에서는 주문수량을 취소하고, 체결 상태에서는 미체결 수량을 취소한다.
-                "nPrice"     : stock["nowPrice"  ],
-                "sOrgOrderNo": stock["orderNo"   ],
-                "reason"     : "미체결 대기시간 초과 주문취소({0})".format(stock["hogaGb"]),
-            }, stock);
+                "nOrderType" : 3 if chejanStock["hogaGb"] == "+매수" else 4,
+                "sScrNo"     : chejanStock["screenNo"  ],
+                "sCode"      : chejanStock["stockCode" ], #주문유형 1:신규매수, 2:신규매도 3:매수취소, 4:매도취소, 5:매수정정, 6:매도정정
+                "nQty"       : orderCount               , #접수인 상태에서는 주문수량을 취소하고, 체결 상태에서는 미체결 수량을 취소한다.
+                "nPrice"     : chejanStock["nowPrice"  ],
+                "sOrgOrderNo": chejanStock["orderNo"   ],
+                "reason"     : "미체결 대기시간 초과 주문취소({0})".format(chejanStock["hogaGb"]),
+            }, chejanStock);
         else:
             result = -1;
         return result;
@@ -147,7 +147,7 @@ class MyStrategy(AbstractStrategy):
                              orderCount;
                 if orderCount > 0:
                     result = self.sendOrder({
-                        "sScrNo"     : "3012",
+                        "sScrNo"    : "3012",
                         "nOrderType": 2,
                         "sCode"     : myStock["stockCode"],
                         "nQty"      : orderCount,
@@ -174,7 +174,7 @@ class MyStrategy(AbstractStrategy):
                         "sCode"     : myStock["stockCode"],
                         "nQty"      : orderCount,
                         "nPrice"    : nowPrice,
-                        "reason"    : "TrailingStop 추가목표가 달성매도({0})".format(myStrategy.get("tsDivSell") + 1),
+                        "reason"    : "TrailingStop 추가목표가 달성매도({0})".format(myStrategy.get("tsDivSell") + 1 if myStrategy["tsDivSell"] < maxSellCnt else "Last"),
                     }, myStock);
 
                     if result == 0:
@@ -213,6 +213,9 @@ class MyStrategy(AbstractStrategy):
 
                         if result == 0:
                             myStrategy["tsAddBuy"] += 1;
+                    else:
+                        #추가매수시 매수가능금액이 부족하다면 추가매수 횟수만 올린다.
+                        myStrategy["tsAddBuy"] += 1;
                 else:
                     if myStock["reminingCount"] > 0:
                         result = self.sendOrder({
@@ -267,7 +270,9 @@ class MyStrategy(AbstractStrategy):
 
                     if result == 0:
                         myStrategy["slAddBuy"] += 1;
-            
+                else:
+                    #추가매수시 매수가능금액이 부족하다면 추가매수 횟수만 올린다.
+                    myStrategy["slAddBuy"] += 1;
             else:
                 if myStock["reminingCount"] > 0:
                     result = self.sendOrder({
@@ -308,7 +313,7 @@ class MyStrategy(AbstractStrategy):
     def getBuyCount(self, nowPrice):
         vOrderableAmount = self.parent.gbMyAccount.getAccountInfo()["vOrderableAmount"]; #주문가능금액
         orderAmount = 0;
-        if self.vBuyRateActive:
+        if self.buyRateActive:
             orderAmount = vOrderableAmount * (self.buyRate / 100);
         else:
             orderAmount = self.buyAmount if vOrderableAmount > self.buyAmount else vOrderableAmount;
@@ -365,6 +370,7 @@ class MyStrategy(AbstractStrategy):
                 result = self.parent.sendOrder({
                     "sAccNo"     : self.parent.gbMyAccount.uValue1.currentData(),
                     "nOrderType" : order["nOrderType" ],#주문유형 1:신규매수, 2:신규매도 3:매수취소, 4:매도취소, 5:매수정정, 6:매도정정
+                    "sScrNo"     : order["sScrNo"     ],#화면번호
                     "sCode"      : order["sCode"      ],#종목코드
                     "nQty"       : order["nQty"       ],#주문수량
                     "nPrice"     : order["nPrice"     ],#주문가격
@@ -379,7 +385,7 @@ class MyStrategy(AbstractStrategy):
                 self.parent.addConsoleSlot({
                     "sRQName": self.parent.nOrderType.get(order["nOrderType"], ""),
                     "sTrCode": "",
-                    "sScrNo" : "3000",
+                    "sScrNo" : order["sScrNo"],
                     "sMsg"   : "{0}: {1}({2}) {3}주, ({4})".format(self.parent.nOrderType.get(order["nOrderType"], ""), stock["stockName"], stock["stockCode"], order["nQty"], order["reason"]),
                 });
             return result;
