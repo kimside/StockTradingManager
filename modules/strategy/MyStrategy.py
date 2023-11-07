@@ -46,8 +46,9 @@ class MyStrategy(AbstractStrategy):
     
     #매수전략
     def buyStrategy(self, obj):
-        isTradeTime = self.datetime.now().strftime("%H%M") >= self.startTime and \
-                      self.datetime.now().strftime("%H%M") <= self.endTime;
+        dt          = datetime.datetime.now();
+        hhmm        = "{0:02d}{1:02d}".format(dt.hour, dt.minute);
+        isTradeTime = (hhmm >= self.startTime and hhmm <= self.endTime);
         
         if self.isRun and isTradeTime:
             if obj["f9001"] in self.conStrategy:
@@ -86,8 +87,9 @@ class MyStrategy(AbstractStrategy):
                 };
     #매도전략
     def sellStrategy(self, obj):
-        isTradeTime = self.datetime.now().strftime("%H%M") >= self.startTime and \
-                      self.datetime.now().strftime("%H%M") <= self.endTime;
+        dt          = datetime.datetime.now();
+        hhmm        = "{0:02d}{1:02d}".format(dt.hour, dt.minute);
+        isTradeTime = (hhmm >= self.startTime and hhmm <= self.endTime);
 
         if self.isRun and isTradeTime:
             myStocks = self.parent.twMyStocks.getRowDatas(obj["f9001"]);

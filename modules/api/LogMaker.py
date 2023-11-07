@@ -2,21 +2,11 @@ import os, json, time, datetime, unicodedata;
 
 class LogMaker:
     def __init__(self, parent=None, **kwargs):
-        self.today_YYYYMMDD = datetime.datetime.now().strftime("%Y%m%d");
-        self.logChejanDir = "logging/{0}/chejan/".format(self.today_YYYYMMDD);
-        os.makedirs(os.path.dirname(self.logChejanDir), exist_ok=True);
-
-        self.logOrderDir = "logging/{0}/order/".format(self.today_YYYYMMDD);
-        os.makedirs(os.path.dirname(self.logOrderDir), exist_ok=True);
-
-        self.logRealDir = "logging/{0}/real/".format(self.today_YYYYMMDD);
-        os.makedirs(os.path.dirname(self.logRealDir), exist_ok=True);
-
-        self.logConditionDir = "logging/{0}/condition/".format(self.today_YYYYMMDD);
-        os.makedirs(os.path.dirname(self.logConditionDir), exist_ok=True);
-
-        self.logKiwoomDir = "logging/{0}/kiwoom/".format(self.today_YYYYMMDD);
-        os.makedirs(os.path.dirname(self.logKiwoomDir), exist_ok=True);
+        dt       = datetime.datetime.now();
+        yyyymmdd = "{0}{1:02d}{2:02d}".format(dt.year, dt.month, dt.day);
+        self.today_YYYYMMDD = yyyymmdd;
+        self.logDir = "logging/{0}/".format(self.today_YYYYMMDD);
+        os.makedirs(os.path.dirname(self.logDir), exist_ok=True);
 
         self.nOrderType = {
             1: "신규매수",
@@ -376,7 +366,6 @@ class LogMaker:
             "f211"     : {"size":  4, "align": ">", "desc": "순매수수량증감"},
             "f212"     : {"size":  5, "align": ">", "desc": "순매수금액"},
             "f213"     : {"size":  1, "align":  "", "desc": "순매수금액증감"},
-            "f10010"   : {"size":  6, "align": ">", "desc": "알수없는항목"},
         };
     
     def getFidLogText(self, fId, value):
@@ -402,74 +391,22 @@ class LogMaker:
              "": lambda s: s,
         }[align](string)
 
-    def logCondition(self, obj):
-        logFile = ("logging/{0}/{1}/{2}.log").format(self.today_YYYYMMDD, "condition", "onReceiveRealCondition");
-        writeText = ["[{0}:{1}]".format(datetime.datetime.now(), "onReceiveRealCondition")];
-        for key in obj:
-            writeText.append(self.getFidLogText(key, obj[key]));
-        writeText.append("\n");
-        with open(logFile, "a", encoding="UTF-8", ) as fileData:
-            fileData.writelines("".join(writeText));
-    
-    def logKiwoom(self, obj):
-        logFile = ("logging/{0}/{1}/{2}.log").format(self.today_YYYYMMDD, "kiwoom", "onReceiveMsg");
-        writeText = ["[{0}:{1}]".format(datetime.datetime.now(), "onReceiveMsg")];
-        for key in obj:
-            writeText.append(self.getFidLogText(key, obj[key]));
-        writeText.append("\n");
-        with open(logFile, "a", encoding="UTF-8", ) as fileData:
-            fileData.writelines("".join(writeText));
-    
-    def logOrder(self, obj):
-        fileDiv = "sendOrder({0})".format(self.nOrderType[obj["f905"]]);
-        logFile = ("logging/{0}/{1}/{2}.log").format(self.today_YYYYMMDD, "order", fileDiv);
+    def writeLog(self, type, obj):
+        if type == "condition":
+            fileDiv    = "onReceiveRealCondition";
+        elif type == "kiwoon":
+            fileDiv    = "onReceiveMsg";
+        elif type == "real":
+            fileDiv    = "onReceiveRealData({0})".format(obj["sRealType"]);
+        elif type == "order":
+            fileDiv    = "sendOrder({0})".format(self.nOrderType[obj["f905"]]);
+        elif type == "chejan":
+            fileDiv    = "onReceiveChejanData(che)" if "gubun" in obj and obj["gubun"] == "0" else "onReceiveChejanData(jan)";
+
         writeText = ["[{0}:{1}]".format(datetime.datetime.now(), fileDiv)];
         for key in obj:
             writeText.append(self.getFidLogText(key, obj[key]));
         writeText.append("\n");
-        with open(logFile, "a", encoding="UTF-8", ) as fileData:
-            fileData.writelines("".join(writeText));
-    
-    def logReal(self, obj):
-        fileDiv = "onReceiveRealData({0})".format(obj["sRealType"]);
-        logFile = ("logging/{0}/{1}/{2}.log").format(self.today_YYYYMMDD, "real", fileDiv);
-        writeText = ["[{0}:{1}]".format(datetime.datetime.now(), fileDiv)];
-        for key in obj:
-            writeText.append(self.getFidLogText(key, obj[key]));
-        writeText.append("\n");
-        with open(logFile, "a", encoding="UTF-8", ) as fileData:
-            fileData.writelines("".join(writeText));
-    
-    def logChejan(self, obj):
-        obj["f9001"] = obj["f9001"][-6:];#종목코드
-        obj["f302" ] = self.api.dynamicCall("GetMasterCodeName(QString)", obj["f9001"]) if obj["f302"] == "" else obj["f302"].strip();#종목명
-        obj["f10"  ] = obj["f10" ].replace("+","").replace("-",""); #현재가
 
-        if obj["gubun"] == "1":   
-            obj["f27" ] = obj["f27" ].replace("+","").replace("-",""); #최우선 매도호가
-            obj["f28" ] = obj["f28" ].replace("+","").replace("-",""); #최우선 매수호가
-            obj["f306"] = obj["f306"].replace("+","").replace("-",""); #하한가
-            obj["f305"] = obj["f305"].replace("+","").replace("-",""); #상한가
-
-        if "gubun" in obj and obj["gubun"] == "0":
-            if "f905" in obj and obj["f905"] == "+매수":#매수쳬결
-                fileDiv = "onReceiveChejanData(cheBuy)";
-            elif "f905" in obj and obj["f905"] == "-매도":#매도체결
-                fileDiv = "onReceiveChejanData(cheSell)";
-            else:
-                fileDiv = "onReceiveChejanData(etc)";
-        elif "gubun" in obj and obj["gubun"] == "1":
-            if "f946" in obj and obj["f946"] == "2":#매수 잔고변경
-                fileDiv = "onReceiveChejanData(janBuy)";
-            elif "f946" in obj and obj["f946"] == "1":#매도 잔고변경
-                fileDiv = "onReceiveChejanData(janSell)";
-            else:
-                fileDiv = "onReceiveChejanData(etc)";
-
-        logFile = ("logging/{0}/{1}/{2}.log").format(self.today_YYYYMMDD, "chejan", fileDiv);
-        writeText = ["[{0}:{1}]".format(datetime.datetime.now(), fileDiv)];
-        for key in obj:
-            writeText.append(self.getFidLogText(key, obj[key]));
-        writeText.append("\n");
-        with open(logFile, "a", encoding="UTF-8", ) as fileData:
+        with open("logging/{0}/{1}.log".format(self.today_YYYYMMDD, fileDiv), "a", encoding="UTF-8", ) as fileData:
             fileData.writelines("".join(writeText));

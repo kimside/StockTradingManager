@@ -7,11 +7,21 @@ def writeFile():
             txt = "".join(["[", str(datetime.datetime.now()), "] ", txt]);
             fileData.write(txt + "\n");
 
-if __name__ == "__main__":
     """
     startTime = time.perf_counter();
     writeFile();
     endTime = time.perf_counter();
     print(f"time elapsed : {int(round((endTime - startTime) * 1000))}ms");
     """
-    print("TrailingStop 추가목표가 달성매도({0})".format(1 + 1 if 1 > 2 else "Max"));
+if __name__ == "__main__":    
+    d = datetime.datetime.now();
+    print(d.year)
+    print(d.month)
+    print(d.day)
+    #startTime = time.perf_counter();
+    #for i in range(100000):
+    #    v = datetime.datetime.now().strftime("%Y%m%d");
+    #    #d = datetime.datetime.now();
+    #    #v = "{0:02d},{1:02d}".format(d.hour, d.minute);
+    #endTime = time.perf_counter();
+    #print(f"time elapsed : {int(round((endTime - startTime) * 1000))}ms");

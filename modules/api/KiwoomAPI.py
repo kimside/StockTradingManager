@@ -384,13 +384,13 @@ class KiwoomAPI(LogMaker, metaclass=Singleton):
         #    "sMsg"   : ("조건검색결과({0})에 {1}: {2}({3})").format(sConName, "(+)종목편입" if sType == "I" else "(-)종목이탈", masterCodeName, sCode[-6:]),
         #});
 
-        self.logCondition({
-            "conId": sConId,
-            "conNm": sConName,
-            "f302" : masterCodeName,
-            "f9001": sCode[-6:],
-            "inout": "종목편입" if sType == "I" else "종목이탈",
-        });
+        #self.writeLog("condition", logCondition({
+        #    "conId": sConId,
+        #    "conNm": sConName,
+        #    "f302" : masterCodeName,
+        #    "f9001": sCode[-6:],
+        #    "inout": "종목편입" if sType == "I" else "종목이탈",
+        #});
 
     #복수종목조회 요청처리
     #sArrCode,   // 조회하려는 종목코드 리스트
@@ -966,7 +966,7 @@ class KiwoomAPI(LogMaker, metaclass=Singleton):
         if sRealType in ["주식체결", "장시작시간"]:
             self.stockSignal.emit(obj);
             #틱 거래정보 로그를 남길 필요가 있을까??
-            #self.logReal(obj);
+            #self.writeLog("real", obj);
     
     #키움서버에서 수신된 메세지
     #sScrNo,  //화면번호
@@ -981,7 +981,7 @@ class KiwoomAPI(LogMaker, metaclass=Singleton):
             "sMsg"   : "{0} (message from kiwoom Server...)".format(sMsg.strip()),
         });
 
-        self.logKiwoom({
+        self.writeLog("kiwoon", {
             "f920"   : sScrNo,
             "sTrCode": sTrCode,
             "msg"    : sMsg,
@@ -1051,7 +1051,7 @@ class KiwoomAPI(LogMaker, metaclass=Singleton):
                 "sMsg"   : ("{0}({1})를 {2}({3})주를 {4} 신청하였습니다.(result:{5})").format(masterCodeName, sCode, nPrice, nQty, self.nOrderType[nOrderType], result),
             });
                 
-            self.logOrder({
+            self.writeLog("order", {
                 "f302"  : masterCodeName,
                 "f9001" : sCode,
                 "f901"  : nPrice,
@@ -1068,7 +1068,7 @@ class KiwoomAPI(LogMaker, metaclass=Singleton):
                 "sMsg"   : ("{0}({1})를 {2}({3})주를 {4} 신청 오류가 발생하였습니다.({5})").format(masterCodeName, sCode, nPrice, nQty, self.nOrderType[nOrderType], self.errCodes[result]),
             });
 
-            self.logKiwoom({
+            self.writeLog("kiwoom", {
                 "f920"  : sScrNo,
                 "sTrCode": "sendOrder",
                 "msg"   : ("{0}({1})를 {2}({3})주를 {4} 신청 오류가 발생하였습니다.({5})").format(masterCodeName, sCode, nPrice, nQty, self.nOrderType[nOrderType], self.errCodes[result]),
@@ -1102,7 +1102,7 @@ class KiwoomAPI(LogMaker, metaclass=Singleton):
         
         #주문취소, 주문정정의 마지막 echo 값으로 전달하지 않아도 된다.
         self.chejanSignal.emit(obj);
-        self.logChejan(obj);
+        self.writeLog("chejan", obj);
         
     #차트 같은 대용량 데이터 수신 함수
     #(ex: 주식일봉차트조회 recevei이벤트 예시)

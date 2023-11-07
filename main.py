@@ -7,15 +7,14 @@ from extends.QTableWidgetMyStocks       import *;
 
 from modules.api.KiwoomAPI              import KiwoomAPI;
 from modules.exception.NotInsallOpenAPI import NotInsallOpenAPI;
-from modules.api.entity.Opt10001        import *;
-from modules.api.entity.Opw00001        import *;
-from modules.api.entity.Opw00004        import *;
-from modules.api.entity.Opw00011        import *;
-from modules.api.entity.Opw00014        import *;
-from modules.api.entity.Opt10001        import *;
-from modules.api.entity.Opt10075        import *;
-from modules.api.entity.Opt10077        import *;
-from modules.api.entity.Optkwfid        import *;
+from modules.api.entity.Opt10001        import Opt10001;
+from modules.api.entity.Opw00001        import Opw00001;
+from modules.api.entity.Opw00004        import Opw00004;
+from modules.api.entity.Opw00011        import Opw00011;
+from modules.api.entity.Opw00014        import Opw00014;
+from modules.api.entity.Opt10075        import Opt10075;
+from modules.api.entity.Opt10077        import Opt10077;
+from modules.api.entity.Optkwfid        import Optkwfid;
 
 from modules.setting.ModalSettings      import ModalSetting;
 from modules.setting.ModalInformation   import ModalInformation;
@@ -25,9 +24,9 @@ from modules.test.TestCode              import TestCode, MyThread;
 from modules.setting.entity.Settings    import Settings;
 from modules.strategy.MyStrategy        import MyStrategy;
 
-loggingDir = "logging/{0}/error/".format(datetime.datetime.now().strftime("%Y%m%d"));
+loggingDir = "logging/{0}/".format(datetime.datetime.now().strftime("%Y%m%d"));
 os.makedirs(os.path.dirname(loggingDir), exist_ok=True);
-logging.basicConfig(filename=loggingDir + "error.log", level=logging.INFO, format='%(asctime)s %(levelname)s %(name)s %(message)s');
+logging.basicConfig(filename=loggingDir + "applicationError.log", level=logging.INFO, format='%(asctime)s %(levelname)s %(name)s %(message)s');
 logger=logging.getLogger(__name__);
 """
 화면번호 사용일람
@@ -90,7 +89,6 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
         #self.appSettings.orderList.add(("001360", "삼성제약"));
         #self.appSettings.setValue("orderList", self.appSettings.orderList);
         #self.appSettings.sync();
-        self.nt = datetime.datetime.now().strftime("%H%M");
         self.btnRun.setEnabled(False);
         self.gbMyAccount.uValue1.setEnabled(False);
         self.cbConUp.setEnabled(False);
@@ -147,8 +145,8 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
         #    "slAddBuy"    : 0,
         #};
         #self.appSettings.setValue("myStrategy", self.appSettings.myStrategy);
-        #self.logFile = open(file="logging/" + datetime.datetime.now().strftime("%Y%m%d") + "/stress_" + datetime.datetime.now().strftime("%Y%m%d") + ".log", mode="a", encoding="UTF-8", );
-
+        #self.logFile = open(file="logging/" + self.today_YYYYMMDD + "/stress_" + self.today_YYYYMMDD + ".log", mode="a", encoding="UTF-8", );
+        
         self.myThread = MyThread(self);
         self.myThread.tSignal.connect(self.stockSignalSlot);
         
@@ -186,9 +184,10 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
 
     #거래시간 이후 자동매매종료
     def shutdown(self):
-        #print(datetime.datetime.now(), datetime.datetime.now().strftime("%H%M"), str(int(self.nt) + 1));
-        #if datetime.datetime.now().strftime("%H%M") == str(int(self.nt) + 1):
-        if datetime.datetime.now().strftime("%H%M") == "1600":
+        dt   = datetime.datetime.now();
+        hhmm = "{0:02d}{1:02d}".format(dt.hour, dt.minute);
+
+        if hhmm == "1600":
             self.myStrategy.isRun = False;
             self.showDownTimer.stop();
             self.close();
@@ -507,39 +506,6 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
     #실시간 수신 데이터 Grid에 반영
     def stockSignalSlot(self, obj):
         #writeText = ["[{0}:{1}]"          .format(datetime.datetime.now(), "buySellPrice")];
-        #writeText.append(", 주문번호({0})"    .format(obj["sRealType"]));
-        #writeText.append(", 주문번호({0})"    .format(obj["f9001"    ]));
-        #writeText.append(", 종목명({0})"      .format(obj["f302"     ]));
-        #writeText.append(", 종목코드({0})"    .format(obj["f307"     ]));
-        #writeText.append(", 매매구분({0})"    .format(obj["f920"     ]));
-        #writeText.append(", 주문가격({0})"    .format(obj["f20"      ]));
-        #writeText.append(", 주문수량({0})"    .format(obj["f10"      ]));
-        #writeText.append(", 체결수량({0})"    .format(obj["f11"      ]));
-        #writeText.append(", 단위체결가({0})"  .format(obj["f12"      ]));
-        #writeText.append(", 단위체결량({0})"  .format(obj["f27"      ]));
-        #writeText.append(", 주문번호({0})"    .format(obj["f28"      ]));
-        #writeText.append(", 종목명({0})"      .format(obj["f15"      ]));
-        #writeText.append(", 종목코드({0})"    .format(obj["f13"      ]));
-        #writeText.append(", 매매구분({0})"    .format(obj["f14"      ]));
-        #writeText.append(", 주문가격({0})"    .format(obj["f16"      ]));
-        #writeText.append(", 주문수량({0})"    .format(obj["f17"      ]));
-        #writeText.append(", 체결수량({0})"    .format(obj["f18"      ]));
-        #writeText.append(", 단위체결가({0})"  .format(obj["f25"      ]));
-        #writeText.append(", 단위체결량({0})"  .format(obj["f26"      ]));
-        #writeText.append(", 주문번호({0})"    .format(obj["f29"      ]));
-        #writeText.append(", 종목명({0})"      .format(obj["f30"      ]));
-        #writeText.append(", 종목코드({0})"    .format(obj["f31"      ]));
-        #writeText.append(", 매매구분({0})"    .format(obj["f32"      ]));
-        #writeText.append(", 주문가격({0})"    .format(obj["f228"     ]));
-        #writeText.append(", 주문수량({0})"    .format(obj["f311"     ]));
-        #writeText.append(", 체결수량({0})"    .format(obj["f290"     ]));
-        #writeText.append(", 단위체결가({0})"  .format(obj["f691"     ]));
-        #writeText.append(", 단위체결량({0})"  .format(obj["f567"     ]));
-        #writeText.append(", 주문번호({0})"    .format(obj["f568"     ]));
-        #writeText.append(", 종목명({0})"      .format(obj["f851"     ]));
-        #writeText.append("\n");
-
-        #writeText = ["[{0}:{1}]"          .format(datetime.datetime.now(), "buySellPrice")];
         #writeText.append(", 주문번호({0})"    .format(self.preFormat(obj["sRealType"],  7, "<")));
         #writeText.append(", 주문번호({0})"    .format(self.preFormat(obj["f9001"    ],  7, "<")));
         #writeText.append(", 종목명({0})"      .format(self.preFormat(obj["f302"     ], 20, "<")));
@@ -572,7 +538,7 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
         #writeText.append(", 종목명({0})"      .format(self.preFormat(obj["f851"     ], 20, "<")));
         #writeText.append("\n");
         
-        #with open(file="logging/" + datetime.datetime.now().strftime("%Y%m%d") + "/stress_" + datetime.datetime.now().strftime("%Y%m%d") + ".log", mode="a", encoding="UTF-8", buffering=1) as dataFile:
+        #with open(file="logging/" + self.today_YYYYMMDD + "/stress_" + self.today_YYYYMMDD + ".log", mode="a", encoding="UTF-8", buffering=1) as dataFile:
         #    dataFile.write("".join(writeText));
         
         sScrNoList = obj["f920"].split(";") \
@@ -977,9 +943,11 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
             vTotalProfitRate = vTotalProfit / totalBuyAmount * 100;
 
         #계좌 당일 손실/수익종료, 당일청산 설정에 따른 자동매매 종료
+        dt   = datetime.datetime.now();
+        hhmm = "{0:02d}{1:02d}".format(dt.hour, dt.minute);
         if (self.vAccountPlusEndActive  and self.gbMyAccount.vTodayProfitRate >= self.vAccountPlusEnd ) or \
            (self.vAccountMinusEndActive and self.gbMyAccount.vTodayProfitRate <= self.vAccountMinusEnd) or \
-           (self.vDayClearActive        and self.vRunEndTime.toString("hhmm") < datetime.datetime.now().strftime("%H%M")):
+           (self.vDayClearActive        and self.vRunEndTime.toString("hhmm") < hhmm):
             
             self.gbMyAccount.uValue1.setEnabled(True);
             self.cbConUp.setEnabled(True);
@@ -1107,74 +1075,80 @@ sys.excepthook = catch_exception;# sys.excepthook을 대체합니다.
 
 #테스트를 위한 로그기록
 def testLogFile(obj, ext={}, vOrderableAmount=""):
+    dt       = datetime.datetime.now();
+    yyyymmdd = "{0}{1:02d}{2:02d}".format(dt.year, dt.month, dt.day);
+
     if type(obj) == Opt10075:
-        with open("logging/" + datetime.datetime.now().strftime("%Y%m%d") + "/chejanHis_" + datetime.datetime.now().strftime("%Y%m%d") + ".log", "w", encoding="UTF-8", ) as fileData:
+        with open("logging/" + yyyymmdd + "/chejanHis_" + yyyymmdd + ".log", "w", encoding="UTF-8", ) as fileData:
             for index, value in enumerate(obj.__getitem__("mField15")):
-                writeText  = "계좌번호({0})"        .format(Main.preFormat("", obj.__getitem__("mField01")[index], 10, ">"));#계좌번호
-                writeText += ", 주문번호({0})"      .format(Main.preFormat("", obj.__getitem__("mField02")[index],  7, ">"));#주문번호
-                writeText += ", 관리사번({0})"      .format(Main.preFormat("", obj.__getitem__("mField03")[index],  7, ">"));#관리사번
-                writeText += ", 종목코드({0})"      .format(Main.preFormat("", obj.__getitem__("mField04")[index],  6, ">"));#종목코드
-                writeText += ", 업무구분({0})"      .format(Main.preFormat("", obj.__getitem__("mField05")[index],  7, ">"));#업무구분
-                writeText += ", 주문상태({0})"      .format(Main.preFormat("", obj.__getitem__("mField06")[index],  7, ">"));#주문상태
-                writeText += ", 종목명({0})"        .format(Main.preFormat("", obj.__getitem__("mField07")[index], 30, "<"));#종목명
-                writeText += ", 주문수량({0})"      .format(Main.preFormat("", obj.__getitem__("mField08")[index],  7, ">"));#주문수량
-                writeText += ", 주문가격({0})"      .format(Main.preFormat("", obj.__getitem__("mField09")[index],  7, ">"));#주문가격
-                writeText += ", 미체결수량({0})"    .format(Main.preFormat("", obj.__getitem__("mField10")[index],  7, ">"));#미체결수량
-                writeText += ", 체결누계금액({0})"  .format(Main.preFormat("", obj.__getitem__("mField11")[index],  7, ">"));#체결누계금액
-                writeText += ", 원주문번호({0})"    .format(Main.preFormat("", obj.__getitem__("mField12")[index],  7, ">"));#원주문번호
-                writeText += ", 주문구분({0})"      .format(Main.preFormat("", obj.__getitem__("mField13")[index],  8, ">"));#주문구분
-                writeText += ", 매매구분({0})"      .format(Main.preFormat("", obj.__getitem__("mField14")[index],  7, ">"));#매매구분
-                writeText += ", 시간({0})"          .format(Main.preFormat("", obj.__getitem__("mField15")[index],  7, ">"));#시간
-                writeText += ", 체결번호({0})"      .format(Main.preFormat("", obj.__getitem__("mField16")[index],  7, ">"));#체결번호
-                writeText += ", 체결가({0})"        .format(Main.preFormat("", obj.__getitem__("mField17")[index],  7, ">"));#체결가
-                writeText += ", 체결량({0})"        .format(Main.preFormat("", obj.__getitem__("mField18")[index],  7, ">"));#체결량
-                writeText += ", 현재가({0})"        .format(Main.preFormat("", obj.__getitem__("mField19")[index],  7, ">"));#현재가
-                writeText += ", 매도호가({0})"      .format(Main.preFormat("", obj.__getitem__("mField20")[index],  7, ">"));#매도호가
-                writeText += ", 매수호가({0})"      .format(Main.preFormat("", obj.__getitem__("mField21")[index],  7, ">"));#매수호가
-                writeText += ", 단위체결가({0})"    .format(Main.preFormat("", obj.__getitem__("mField22")[index],  7, ">"));#단위체결가
-                writeText += ", 단위체결량({0})"    .format(Main.preFormat("", obj.__getitem__("mField23")[index],  7, ">"));#단위체결량
-                writeText += ", 당일매매수수료({0})".format(Main.preFormat("", obj.__getitem__("mField24")[index],  7, ">"));#당일매매수수료
-                writeText += ", 당일매매세금({0})"  .format(Main.preFormat("", obj.__getitem__("mField25")[index],  7, ">"));#당일매매세금
-                writeText += ", 개인투자자({0})"    .format(Main.preFormat("", obj.__getitem__("mField26")[index],  7, ">"));#개인투자자
-                fileData.writelines(writeText + "\n");
+                writeText  = ["계좌번호({0})"        .format(Main.preFormat("", obj.__getitem__("mField01")[index], 10, ">"))];#계좌번호
+                writeText.append(", 주문번호({0})"      .format(Main.preFormat("", obj.__getitem__("mField02")[index],  7, ">")));#주문번호
+                writeText.append(", 관리사번({0})"      .format(Main.preFormat("", obj.__getitem__("mField03")[index],  7, ">")));#관리사번
+                writeText.append(", 종목코드({0})"      .format(Main.preFormat("", obj.__getitem__("mField04")[index],  6, ">")));#종목코드
+                writeText.append(", 업무구분({0})"      .format(Main.preFormat("", obj.__getitem__("mField05")[index],  7, ">")));#업무구분
+                writeText.append(", 주문상태({0})"      .format(Main.preFormat("", obj.__getitem__("mField06")[index],  7, ">")));#주문상태
+                writeText.append(", 종목명({0})"        .format(Main.preFormat("", obj.__getitem__("mField07")[index], 30, "<")));#종목명
+                writeText.append(", 주문수량({0})"      .format(Main.preFormat("", obj.__getitem__("mField08")[index],  7, ">")));#주문수량
+                writeText.append(", 주문가격({0})"      .format(Main.preFormat("", obj.__getitem__("mField09")[index],  7, ">")));#주문가격
+                writeText.append(", 미체결수량({0})"    .format(Main.preFormat("", obj.__getitem__("mField10")[index],  7, ">")));#미체결수량
+                writeText.append(", 체결누계금액({0})"  .format(Main.preFormat("", obj.__getitem__("mField11")[index],  7, ">")));#체결누계금액
+                writeText.append(", 원주문번호({0})"    .format(Main.preFormat("", obj.__getitem__("mField12")[index],  7, ">")));#원주문번호
+                writeText.append(", 주문구분({0})"      .format(Main.preFormat("", obj.__getitem__("mField13")[index],  8, ">")));#주문구분
+                writeText.append(", 매매구분({0})"      .format(Main.preFormat("", obj.__getitem__("mField14")[index],  7, ">")));#매매구분
+                writeText.append(", 시간({0})"          .format(Main.preFormat("", obj.__getitem__("mField15")[index],  7, ">")));#시간
+                writeText.append(", 체결번호({0})"      .format(Main.preFormat("", obj.__getitem__("mField16")[index],  7, ">")));#체결번호
+                writeText.append(", 체결가({0})"        .format(Main.preFormat("", obj.__getitem__("mField17")[index],  7, ">")));#체결가
+                writeText.append(", 체결량({0})"        .format(Main.preFormat("", obj.__getitem__("mField18")[index],  7, ">")));#체결량
+                writeText.append(", 현재가({0})"        .format(Main.preFormat("", obj.__getitem__("mField19")[index],  7, ">")));#현재가
+                writeText.append(", 매도호가({0})"      .format(Main.preFormat("", obj.__getitem__("mField20")[index],  7, ">")));#매도호가
+                writeText.append(", 매수호가({0})"      .format(Main.preFormat("", obj.__getitem__("mField21")[index],  7, ">")));#매수호가
+                writeText.append(", 단위체결가({0})"    .format(Main.preFormat("", obj.__getitem__("mField22")[index],  7, ">")));#단위체결가
+                writeText.append(", 단위체결량({0})"    .format(Main.preFormat("", obj.__getitem__("mField23")[index],  7, ">")));#단위체결량
+                writeText.append(", 당일매매수수료({0})".format(Main.preFormat("", obj.__getitem__("mField24")[index],  7, ">")));#당일매매수수료
+                writeText.append(", 당일매매세금({0})"  .format(Main.preFormat("", obj.__getitem__("mField25")[index],  7, ">")));#당일매매세금
+                writeText.append(", 개인투자자({0})"    .format(Main.preFormat("", obj.__getitem__("mField26")[index],  7, ">")));#개인투자자
+                writeText.append("\n");
+                fileData.writelines("".join(writeText));
     elif type(obj) == Opt10077:
-        with open("logging/" + datetime.datetime.now().strftime("%Y%m%d") + "/trade_" + datetime.datetime.now().strftime("%Y%m%d") + ".log", "w", encoding="UTF-8", ) as fileData:
+        with open("logging/" + yyyymmdd + "/trade_" + yyyymmdd + ".log", "w", encoding="UTF-8", ) as fileData:
             for index, value in enumerate(obj.__getitem__("mField05")):
-                writeText  = "종목코드({0})"        .format(Main.preFormat("", obj.__getitem__("mField09")[index][-6:],  6, ">"));#종목코드
-                writeText += ", 종목명({0})"        .format(Main.preFormat("", obj.__getitem__("mField01")[index]     , 30, "<"));#종목명
-                writeText += ", 매입단가({0})"      .format(Main.preFormat("", obj.__getitem__("mField03")[index]     ,  7, ">"));#매입단가
-                writeText += ", 체결가({0})"        .format(Main.preFormat("", obj.__getitem__("mField04")[index]     ,  7, ">"));#체결가
-                writeText += ", 체결량({0})"        .format(Main.preFormat("", obj.__getitem__("mField02")[index]     ,  7, ">"));#체결량
-                writeText += ", 당일매도손익({0})"  .format(Main.preFormat("", value                                  ,  7, ">"));#당일매도손익
-                writeText += ", 당일매매수수료({0})".format(Main.preFormat("", obj.__getitem__("mField07")[index]     ,  7, ">"));#당일매매수수료
-                writeText += ", 당일매매세금({0})"  .format(Main.preFormat("", obj.__getitem__("mField08")[index]     ,  7, ">"));#당일매매세금
-                fileData.writelines(writeText + "\n");
+                writeText  = ["종목코드({0})"        .format(Main.preFormat("", obj.__getitem__("mField09")[index][-6:],  6, ">"))];#종목코드
+                writeText.append(", 종목명({0})"        .format(Main.preFormat("", obj.__getitem__("mField01")[index]     , 30, "<")));#종목명
+                writeText.append(", 매입단가({0})"      .format(Main.preFormat("", obj.__getitem__("mField03")[index]     ,  7, ">")));#매입단가
+                writeText.append(", 체결가({0})"        .format(Main.preFormat("", obj.__getitem__("mField04")[index]     ,  7, ">")));#체결가
+                writeText.append(", 체결량({0})"        .format(Main.preFormat("", obj.__getitem__("mField02")[index]     ,  7, ">")));#체결량
+                writeText.append(", 당일매도손익({0})"  .format(Main.preFormat("", value                                  ,  7, ">")));#당일매도손익
+                writeText.append(", 당일매매수수료({0})".format(Main.preFormat("", obj.__getitem__("mField07")[index]     ,  7, ">")));#당일매매수수료
+                writeText.append(", 당일매매세금({0})"  .format(Main.preFormat("", obj.__getitem__("mField08")[index]     ,  7, ">")));#당일매매세금
+                writeText.append("\n");
+                fileData.writelines("".join(writeText));
     else:
-        with open("logging/" + datetime.datetime.now().strftime("%Y%m%d") + "/order/buySellPrice.log", "a", encoding="UTF-8", ) as fileData:
-            writeText =  "[{0}:{1}]"          .format(datetime.datetime.now(), "buySellPrice");
-            writeText += ", 주문번호({0})"    .format(Main.preFormat("", obj["orderNo"    ],  7, "<"));
-            writeText += ", 종목명({0})"      .format(Main.preFormat("", obj["stockName"  ], 20, "<"));
-            writeText += ", 종목코드({0})"    .format(Main.preFormat("", obj["stockCode"  ],  6, ">"));
-            writeText += ", 매매구분({0})"    .format(Main.preFormat("", obj["hogaGb"     ],  8, ">"));
-            writeText += ", 주문가격({0})"    .format(Main.preFormat("", obj["orderPrice" ],  7, ">"));
-            writeText += ", 주문수량({0})"    .format(Main.preFormat("", obj["orderCount" ],  7, ">"));
-            writeText += ", 체결수량({0})"    .format(Main.preFormat("", obj["chejanCount"],  3, ">"));
-            writeText += ", 단위체결가({0})"  .format(Main.preFormat("", obj["unitPrice"  ],  7, ">"));
-            writeText += ", 단위체결량({0})"  .format(Main.preFormat("", obj["unitCount"  ],  7, ">"));
+        with open("logging/" + yyyymmdd + "/order/buySellPrice.log", "a", encoding="UTF-8", ) as fileData:
+            writeText =  ["[{0}:{1}]"          .format(datetime.datetime.now(), "buySellPrice")];
+            writeText.append(", 주문번호({0})"    .format(Main.preFormat("", obj["orderNo"    ],  7, "<")));
+            writeText.append(", 종목명({0})"      .format(Main.preFormat("", obj["stockName"  ], 20, "<")));
+            writeText.append(", 종목코드({0})"    .format(Main.preFormat("", obj["stockCode"  ],  6, ">")));
+            writeText.append(", 매매구분({0})"    .format(Main.preFormat("", obj["hogaGb"     ],  8, ">")));
+            writeText.append(", 주문가격({0})"    .format(Main.preFormat("", obj["orderPrice" ],  7, ">")));
+            writeText.append(", 주문수량({0})"    .format(Main.preFormat("", obj["orderCount" ],  7, ">")));
+            writeText.append(", 체결수량({0})"    .format(Main.preFormat("", obj["chejanCount"],  3, ">")));
+            writeText.append(", 단위체결가({0})"  .format(Main.preFormat("", obj["unitPrice"  ],  7, ">")));
+            writeText.append(", 단위체결량({0})"  .format(Main.preFormat("", obj["unitCount"  ],  7, ">")));
             
             if obj["hogaGb"] == "+매수":
-                writeText += ", 수수료({0})"      .format(Main.preFormat("", ext["buyTax" ]  , 7, ">"));
-                writeText += ", 세금({0})"        .format(Main.preFormat("", ""              , 3, ">"));
-                writeText += ", 총금액({0})"      .format(Main.preFormat("", ext["buyAmount"], 7, ">"));
-                writeText += ", 매수가능금액({0})".format(Main.preFormat("", vOrderableAmount, 7, ">"));
+                writeText.append(", 수수료({0})"      .format(Main.preFormat("", ext["buyTax" ]  , 7, ">")));
+                writeText.append(", 세금({0})"        .format(Main.preFormat("", ""              , 3, ">")));
+                writeText.append(", 총금액({0})"      .format(Main.preFormat("", ext["buyAmount"], 7, ">")));
+                writeText.append(", 매수가능금액({0})".format(Main.preFormat("", vOrderableAmount, 7, ">")));
             elif obj["hogaGb"] == "-매도":
-                writeText += ", 수수료({0})"      .format(Main.preFormat("", ext["sellTax"]  , 7, ">"));
-                writeText += ", 세금({0})"        .format(Main.preFormat("", ext["tax"    ]  , 3, ">"));
-                writeText += ", 총금액({0})"      .format(Main.preFormat("", ext["nowAmount"], 7, ">"));
-                writeText += ", 매수가능금액({0})".format(Main.preFormat("", vOrderableAmount, 7, ">"));
+                writeText.append(", 수수료({0})"      .format(Main.preFormat("", ext["sellTax"]  , 7, ">")));
+                writeText.append(", 세금({0})"        .format(Main.preFormat("", ext["tax"    ]  , 3, ">")));
+                writeText.append(", 총금액({0})"      .format(Main.preFormat("", ext["nowAmount"], 7, ">")));
+                writeText.append(", 매수가능금액({0})".format(Main.preFormat("", vOrderableAmount, 7, ">")));
             else:
-                writeText += ", 매수가능금액({0})".format(Main.preFormat("", vOrderableAmount, 7, ">"));
+                writeText.append(", 매수가능금액({0})".format(Main.preFormat("", vOrderableAmount, 7, ">")));
             
+            writeText.append("\n");
             fileData.writelines(writeText + "\n");
 
 if __name__ == "__main__":
