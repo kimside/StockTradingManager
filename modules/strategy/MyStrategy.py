@@ -70,21 +70,21 @@ class MyStrategy(AbstractStrategy):
                         #체결,잔고 signal받는 곳에서 처리할려고 했는데.. 그사이 너무 많이 매수 신청을 해서.. 신청즉시 재매수금지 등록을 해야함
                         #근데... 신청결과에서는 잔고부족이나, 기타 다른 오류는 확인이 불가한데... 이거 신청만 되고 체결이 안되면..
                         #그냥 재매수 금지항목에만 등록되는건데. 뭐 다른 방법이 없나???
-                        self.appSettings.orderList.add((obj["f9001"], obj["f302" ]));
+                        self.appSettings.orderList.add((obj["f9001"], obj["f302"]));
                         result = self.sendOrder({
-                            "sScrNo"     : "3001",
-                            "nOrderType" : 1,
-                            "sCode"      : obj["f9001"],
-                            "nQty"       : orderCount,
-                            "nPrice"     : obj["f10"  ],
-                            "reason"     : "조건검색 신규 매수"
+                            "sScrNo"    : "3001",
+                            "nOrderType": 1,
+                            "sCode"     : obj["f9001"],
+                            "nQty"      : orderCount,
+                            "nPrice"    : obj["f10"  ],
+                            "reason"    : "조건검색 신규 매수"
                         }, {
-                            "stockCode"    : obj["f9001"],
-                            "stockName"    : obj["f302" ],
+                            "stockCode" : obj["f9001"],
+                            "stockName" : obj["f302" ],
                         });
 
                         if result != 0:
-                            self.appSettings.orderList.remove((obj["f9001"], obj["f302" ]));
+                            self.appSettings.orderList.remove((obj["f9001"], obj["f302"]));
                     else:
                         result = -1;
             else:

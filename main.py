@@ -507,42 +507,6 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
     
     #실시간 수신 데이터 Grid에 반영
     def stockSignalSlot(self, obj):
-        #writeText = ["[{0}:{1}]"          .format(datetime.datetime.now(), "buySellPrice")];
-        #writeText.append(", 주문번호({0})"    .format(self.preFormat(obj["sRealType"],  7, "<")));
-        #writeText.append(", 주문번호({0})"    .format(self.preFormat(obj["f9001"    ],  7, "<")));
-        #writeText.append(", 종목명({0})"      .format(self.preFormat(obj["f302"     ], 20, "<")));
-        #writeText.append(", 종목코드({0})"    .format(self.preFormat(obj["f307"     ],  6, ">")));
-        #writeText.append(", 매매구분({0})"    .format(self.preFormat(obj["f920"     ],  8, ">")));
-        #writeText.append(", 주문가격({0})"    .format(self.preFormat(obj["f20"      ],  7, ">")));
-        #writeText.append(", 주문수량({0})"    .format(self.preFormat(obj["f10"      ],  7, ">")));
-        #writeText.append(", 체결수량({0})"    .format(self.preFormat(obj["f11"      ],  3, ">")));
-        #writeText.append(", 단위체결가({0})"  .format(self.preFormat(obj["f12"      ],  7, ">")));
-        #writeText.append(", 단위체결량({0})"  .format(self.preFormat(obj["f27"      ],  7, ">")));
-        #writeText.append(", 주문번호({0})"    .format(self.preFormat(obj["f28"      ],  7, "<")));
-        #writeText.append(", 종목명({0})"      .format(self.preFormat(obj["f15"      ], 20, "<")));
-        #writeText.append(", 종목코드({0})"    .format(self.preFormat(obj["f13"      ],  6, ">")));
-        #writeText.append(", 매매구분({0})"    .format(self.preFormat(obj["f14"      ],  8, ">")));
-        #writeText.append(", 주문가격({0})"    .format(self.preFormat(obj["f16"      ],  7, ">")));
-        #writeText.append(", 주문수량({0})"    .format(self.preFormat(obj["f17"      ],  7, ">")));
-        #writeText.append(", 체결수량({0})"    .format(self.preFormat(obj["f18"      ],  3, ">")));
-        #writeText.append(", 단위체결가({0})"  .format(self.preFormat(obj["f25"      ],  7, ">")));
-        #writeText.append(", 단위체결량({0})"  .format(self.preFormat(obj["f26"      ],  7, ">")));
-        #writeText.append(", 주문번호({0})"    .format(self.preFormat(obj["f29"      ],  7, "<")));
-        #writeText.append(", 종목명({0})"      .format(self.preFormat(obj["f30"      ], 20, "<")));
-        #writeText.append(", 종목코드({0})"    .format(self.preFormat(obj["f31"      ],  6, ">")));
-        #writeText.append(", 매매구분({0})"    .format(self.preFormat(obj["f32"      ],  8, ">")));
-        #writeText.append(", 주문가격({0})"    .format(self.preFormat(obj["f228"     ],  7, ">")));
-        #writeText.append(", 주문수량({0})"    .format(self.preFormat(obj["f311"     ],  7, ">")));
-        #writeText.append(", 체결수량({0})"    .format(self.preFormat(obj["f290"     ],  3, ">")));
-        #writeText.append(", 단위체결가({0})"  .format(self.preFormat(obj["f691"     ],  7, ">")));
-        #writeText.append(", 단위체결량({0})"  .format(self.preFormat(obj["f567"     ],  7, ">")));
-        #writeText.append(", 주문번호({0})"    .format(self.preFormat(obj["f568"     ],  7, "<")));
-        #writeText.append(", 종목명({0})"      .format(self.preFormat(obj["f851"     ], 20, "<")));
-        #writeText.append("\n");
-        
-        #with open(file="logging/" + self.today_YYYYMMDD + "/stress_" + self.today_YYYYMMDD + ".log", mode="a", encoding="UTF-8", buffering=1) as dataFile:
-        #    dataFile.write("".join(writeText));
-        
         sScrNoList = obj["f920"].split(";") \
                      if "f920" in obj else  \
                      [];
@@ -690,10 +654,7 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
                 3021: StopLoss(매수) 손실 추가매수,
                 """
                 #개발사항: 매수 취소시..  전략부분 원복... 근디.. 최초 매수인지, 추가매수인지 모르는디.. 어떻게 확인 처리하지??
-                if chejan["screenNo"] == "3001":
-                    if (chejan["stockCode"], chejan["stockName"]) in self.appSettings.orderList:
-                        self.appSettings.orderList.remove((chejan["stockCode"], chejan["stockName"]));
-                elif chejan["screenNo"] == ["3011", "3021"]:
+                if chejan["screenNo"] == ["3011", "3021"]:
                     myStrategy = self.appSettings.myStrategy[chejan["stockCode"]];
                     if chejan["screenNo"] == "3011":
                         myStrategy["tsAddBuy"] -= 1;

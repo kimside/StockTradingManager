@@ -15,9 +15,9 @@ def writeFile():
     """
 if __name__ == "__main__":    
     d = datetime.datetime.now();
-    print(d.year)
-    print(d.month)
-    print(d.day)
+    #time.sleep(0.5);
+    d2 = datetime.datetime.now();
+    print(d < d2, d, d2);
     #startTime = time.perf_counter();
     #for i in range(100000):
     #    v = datetime.datetime.now().strftime("%Y%m%d");
