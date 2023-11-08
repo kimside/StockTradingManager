@@ -14,10 +14,9 @@ def writeFile():
     print(f"time elapsed : {int(round((endTime - startTime) * 1000))}ms");
     """
 if __name__ == "__main__":    
-    d = datetime.datetime.now();
-    #time.sleep(0.5);
-    d2 = datetime.datetime.now();
-    print(d < d2, d, d2);
+    s = "[RC4007] 모의투자 매매제한 종목입니다.";
+    if not "100000" in s:
+        print(s[1:7]);
     #startTime = time.perf_counter();
     #for i in range(100000):
     #    v = datetime.datetime.now().strftime("%Y%m%d");

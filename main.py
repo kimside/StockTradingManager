@@ -43,6 +43,7 @@ logger=logging.getLogger(__name__);
     3021: StopLoss(매수) 손실 추가매수,
     3022: StopLoss(매도) 수익달성,
     3023: StopLoss(매도) 손실 전량매도,
+    3999: 기타주문,
 )
 4000: 내 계좌 실시간 시세요청
 5000: 
@@ -126,6 +127,19 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
         self.tbConsole.addAction(historyClear)
 
         self.pageNavigation.setVisible(False);
+
+        self.orderScrNo = {
+            "3001": "신규매수",
+            "3002": "신규매도",
+            "3011": "TrailingStop(매수) 손실 추가매수",
+            "3012": "TrailingStop(매도) 수익달성",
+            "3013": "TrailingStop(매도) 수익보존",
+            "3014": "TrailingStop(매도) 손실 전량매도",
+            "3021": "StopLoss(매수) 손실 추가매수",
+            "3022": "StopLoss(매도) 수익달성",
+            "3023": "StopLoss(매도) 손실 전량매도",
+            "3999": "기타주문",
+        };
         
         #TrayIcon 설정
         #self.systray = QtWidgets.QSystemTrayIcon(self);
@@ -187,7 +201,7 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
         dt   = datetime.datetime.now();
         hhmm = "{0:02d}{1:02d}".format(dt.hour, dt.minute);
 
-        if hhmm == "1600":
+        if hhmm == "1800":
             self.myStrategy.isRun = False;
             self.showDownTimer.stop();
             self.close();
@@ -626,70 +640,138 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
             #(분할로 매수될 경우 단위체결가가 다르기 때문에.. 매수 접수된 금액기준으로 계산하여 세금 반영, 때문에 오차가 발생할 수 있다.)
             #ex) 1700원을 10주 매도하는데 1개씩 매도체결될 경우 각각의 수수료와 세금은 없지만.. 매도주문건 전체로 보면.. 17000원에 대한.. 수수료와 세금이 존재한다.
             #    단 매도주문을 1주씩 따로따로 하면.. 수수료와 세금도 각각 개별 주문별로 따로 처리해서 상관없다.. (초당 sendOrder 5건 제한으로... 아쉽...)
-            if chejan["orderStatus"] == "접수" and chejan["hogaGb"] == "매수정정":
-                #[+매수] 주문의 수량을 정정한다...(부분체결 진행중이면???)
-                chejanStocks = self.twChejanStocks.getRowDatas(chejan["oriOrderNo"]);
-                for chejanStock in chejanStocks:
-                    chejanStock["orderCount"] = int(chejan["orderCount"]);
-                    self.twChejanStocks.addRows(chejanStock);
-                
-            elif chejan["orderStatus"] == "접수" and chejan["hogaGb"] == "매도정정":
-                #[-매도] 주문의 수량을 정정한다...(부분체결 진행중이면???)
-                #보유주식의 현재 주문가능수량을 넘지않게.... 그리고 기존 주문보다 적게 변경한다면 주문가능수량은 보유주식의 주문가능수량에 반영
-                chejanStocks = self.twChejanStocks.getRowDatas(chejan["oriOrderNo"]);
-                for chejanStock in chejanStocks:
-                    myStocks = self.twMyStocks.getRowDatas(chejan["stockCode"]);
+            if chejan["orderStatus"] == "접수":
+                if chejan["hogaGb"] == "매수정정":
+                    #[+매수] 주문의 수량을 정정한다...(부분체결 진행중이면???)
+                    chejanStocks = self.twChejanStocks.getRowDatas(chejan["oriOrderNo"]);
+                    for chejanStock in chejanStocks:
+                        chejanStock["orderCount"] = int(chejan["orderCount"]);
+                        self.twChejanStocks.addRows(chejanStock);
+
+                    self.addConsoleSlot({
+                        "sRQName": chejan["hogaGb"],
+                        "sTrCode": "",
+                        "sScrNo" : chejan["screenNo"],
+                        "sMsg"   : "{0}({1}) 정정주문이 접수되었습니다.(원주문번호:{2})".format(
+                            chejan["stockName" ],
+                            chejan["stockCode" ],
+                            chejan["oriOrderNo"],
+                        ),
+                    });
                     
+                elif chejan["hogaGb"] == "매도정정":
+                    #[-매도] 주문의 수량을 정정한다...(부분체결 진행중이면???)
+                    #보유주식의 현재 주문가능수량을 넘지않게.... 그리고 기존 주문보다 적게 변경한다면 주문가능수량은 보유주식의 주문가능수량에 반영
+                    chejanStocks = self.twChejanStocks.getRowDatas(chejan["oriOrderNo"]);
+                    for chejanStock in chejanStocks:
+                        myStocks = self.twMyStocks.getRowDatas(chejan["stockCode"]);
+                        
+                        for myStock in myStocks:
+                            myStock["reminingCount"] = myStock["reminingCount"] + (chejanStock["orderCount"] - int(chejan["orderCount"]));
+                            self.twMyStocks.addRows(myStock);
+                        
+                        chejanStock["orderCount"] = int(chejan["orderCount"]);
+                        self.twChejanStocks.addRows(chejanStock);
+                    
+                    self.addConsoleSlot({
+                        "sRQName": chejan["hogaGb"],
+                        "sTrCode": "",
+                        "sScrNo" : chejan["screenNo"],
+                        "sMsg"   : "{0}({1}) 정정주문이 접수되었습니다.(원주문번호:{2})".format(
+                            chejan["stockName" ],
+                            chejan["stockCode" ],
+                            chejan["oriOrderNo"],
+                        ),
+                    });
+                    
+                elif chejan["hogaGb"] == "매수취소":
+                    """
+                    3001: 신규매수,
+                    3011: TrailingStop(매수) 손실 추가매수,
+                    3021: StopLoss(매수) 손실 추가매수,
+                    """
+                    #개발사항: 매수 취소시..  전략부분 원복... 근디.. 최초 매수인지, 추가매수인지 모르는디.. 어떻게 확인 처리하지??
+                    if chejan["screenNo"] == ["3011", "3021"]:
+                        myStrategy = self.appSettings.myStrategy[chejan["stockCode"]];
+                        if chejan["screenNo"] == "3011":
+                            myStrategy["tsAddBuy"] -= 1;
+                        else:
+                            myStrategy["slAddBuy"] -= 1;
+                    
+                    #원주문번호를 찾아 해당 주문건을 삭제한다.
+                    self.twChejanStocks.delRows(chejan["oriOrderNo"]);
+                    self.addConsoleSlot({
+                        "sRQName": chejan["hogaGb"],
+                        "sTrCode": "",
+                        "sScrNo" : chejan["screenNo"],
+                        "sMsg"   : "{0}({1}) '{2}' 취소가 접수되었습니다.(원주문번호:{3})".format(
+                            chejan["stockName" ],
+                            chejan["stockCode" ],
+                            self.orderScrNo[chejan.get("screenNo", "3999")],
+                            chejan["oriOrderNo"],
+                        ),
+                    });
+                    
+                elif chejan["hogaGb"] == "매도취소":
+                    """
+                    3012: TrailingStop(매도) 수익달성,
+                    3013: TrailingStop(매도) 수익보존,
+                    3014: TrailingStop(매도) 손실 전량매도,
+                    3022: StopLoss(매도) 수익달성,
+                    3023: StopLoss(매도) 손실 전량매도,
+                    """
+                    #개발사항: 매도 취소시..  전략부분 원복... 근디.. 수익 매도인지, 손실매도인지 모르는디.. 어떻게 확인 처리하지??
+                    if chejan["screenNo"] in ["3012", "3013", "3014", "3022", "3023"]:
+                        myStrategy = self.appSettings.myStrategy[chejan["stockCode"]];
+                        if chejan["screenNo"] in ["3012", "3013", "3014"]:
+                            myStrategy["tsDivSell"] -= 1;
+                        else:
+                            myStrategy["slDivSell"] -= 1;
+                    
+                    #계좌 보유주식 주문가능수량 업데이트(부분 체결이 되었을수도 있기에..  확인해야한다.)
+                    myStocks = self.twMyStocks.getRowDatas(chejan["stockCode"]);
                     for myStock in myStocks:
-                        myStock["reminingCount"] = myStock["reminingCount"] + (chejanStock["orderCount"] - int(chejan["orderCount"]));
+                        #취소주문시 미체결 수량을 주문가능에 더한다.
+                        myStock["reminingCount"] += int(chejan["missCount"]);
                         self.twMyStocks.addRows(myStock);
                     
-                    chejanStock["orderCount"] = int(chejan["orderCount"]);
-                    self.twChejanStocks.addRows(chejanStock);
-                
-            elif chejan["orderStatus"] == "접수" and chejan["hogaGb"] == "매수취소":
-                """
-                3001: 신규매수,
-                3011: TrailingStop(매수) 손실 추가매수,
-                3021: StopLoss(매수) 손실 추가매수,
-                """
-                #개발사항: 매수 취소시..  전략부분 원복... 근디.. 최초 매수인지, 추가매수인지 모르는디.. 어떻게 확인 처리하지??
-                if chejan["screenNo"] == ["3011", "3021"]:
-                    myStrategy = self.appSettings.myStrategy[chejan["stockCode"]];
-                    if chejan["screenNo"] == "3011":
-                        myStrategy["tsAddBuy"] -= 1;
-                    else:
-                        myStrategy["slAddBuy"] -= 1;
-                
-                #원주문번호를 찾아 해당 주문건을 삭제한다.
-                self.twChejanStocks.delRows(chejan["oriOrderNo"]);
-                
-            elif chejan["orderStatus"] == "접수" and chejan["hogaGb"] == "매도취소":
-                """
-                3012: TrailingStop(매도) 수익달성,
-                3013: TrailingStop(매도) 수익보존,
-                3014: TrailingStop(매도) 손실 전량매도,
-                3022: StopLoss(매도) 수익달성,
-                3023: StopLoss(매도) 손실 전량매도,
-                """
-                #개발사항: 매도 취소시..  전략부분 원복... 근디.. 수익 매도인지, 손실매도인지 모르는디.. 어떻게 확인 처리하지??
-                if chejan["screenNo"] in ["3012", "3013", "3014", "3022", "3023"]:
-                    myStrategy = self.appSettings.myStrategy[chejan["stockCode"]];
-                    if chejan["screenNo"] in ["3012", "3013", "3014"]:
-                        myStrategy["tsDivSell"] -= 1;
-                    else:
-                        myStrategy["slDivSell"] -= 1;
-                
-                #계좌 보유주식 주문가능수량 업데이트(부분 체결이 되었을수도 있기에..  확인해야한다.)
-                myStocks = self.twMyStocks.getRowDatas(chejan["stockCode"]);
-                for myStock in myStocks:
-                    #취소주문시 미체결 수량을 주문가능에 더한다.
-                    myStock["reminingCount"] += int(chejan["missCount"]);
-                    self.twMyStocks.addRows(myStock);
-                
-                #원주문번호를 찾아 해당 주문건을 삭제한다.
-                self.twChejanStocks.delRows(chejan["oriOrderNo"]);
-
+                    #원주문번호를 찾아 해당 주문건을 삭제한다.
+                    self.twChejanStocks.delRows(chejan["oriOrderNo"]);
+                    self.addConsoleSlot({
+                        "sRQName": chejan["hogaGb"],
+                        "sTrCode": "",
+                        "sScrNo" : chejan["screenNo"],
+                        "sMsg"   : "{0}({1}) '{2}' 취소가 접수되었습니다.(원주문번호:{3})".format(
+                            chejan["stockName" ],
+                            chejan["stockCode" ],
+                            self.orderScrNo[chejan.get("screenNo", "3999")],
+                            chejan["oriOrderNo"],
+                        ),
+                    });
+                elif chejan["hogaGb"] == "+매수":
+                    self.addConsoleSlot({
+                        "sRQName": chejan["hogaGb"],
+                        "sTrCode": "",
+                        "sScrNo" : chejan["screenNo"],
+                        "sMsg"   : "{0}({1}) '{2}' 주문이 접수되었습니다.(주문번호:{3})".format(
+                            chejan["stockName" ],
+                            chejan["stockCode" ],
+                            self.orderScrNo[chejan.get("screenNo", "3999")],
+                            chejan["oriOrderNo"],
+                        ),
+                    });
+                elif chejan["hogaGb"] == "-매수":
+                    self.addConsoleSlot({
+                        "sRQName": chejan["hogaGb"],
+                        "sTrCode": "",
+                        "sScrNo" : chejan["screenNo"],
+                        "sMsg"   : "{0}({1}) '{2}' 주문이 접수되었습니다.(주문번호:{3})".format(
+                            chejan["stockName" ],
+                            chejan["stockCode" ],
+                            self.orderScrNo[chejan.get("screenNo", "3999")],
+                            chejan["oriOrderNo"],
+                        ),
+                    });
             elif chejan["orderStatus"] == "체결":
                 tradeStock = self.calcStock({
                     "stockCode"     : chejan["stockCode" ],
@@ -709,7 +791,20 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
 
                     if chejan["missCount"] == "0":#미체결수량
                         self.twChejanStocks.delRows(chejan["orderNo"]);
-                
+
+                    self.addConsoleSlot({
+                        "sRQName": self.orderScrNo[chejan.get("screenNo", "3999")],
+                        "sTrCode": "",
+                        "sScrNo" : chejan["screenNo"],
+                        "sMsg"   : "{0}({1}) [주문:{2}, 미체결:{3}, 단위체결:{4}]주문이 체결되었습니다.(주문번호:{5})".format(
+                            chejan["stockName" ],
+                            chejan["stockCode" ],
+                            chejan["orderCount"],
+                            chejan["missCount" ],
+                            chejan["unitCount" ],
+                            chejan["orderNo"   ],
+                        ),
+                    });
                 elif chejan["hogaGb"] == "-매도":
                     self.gbMyAccount.setAccountInfo({
                         "vTodayBuyAmount" : accountInfo["vTodayBuyAmount" ] + tradeStock["buyAmount"],#매도가 발생할경우에만 당일수익율을 계산한다.
@@ -741,6 +836,20 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
                     
                     if chejan["missCount"] == "0":#미체결수량
                         self.twChejanStocks.delRows(chejan["orderNo"]);
+
+                    self.addConsoleSlot({
+                        "sRQName": self.orderScrNo[chejan.get("screenNo", "3999")],
+                        "sTrCode": "",
+                        "sScrNo" : chejan["screenNo"],
+                        "sMsg"   : "{0}({1}) [주문:{2}, 미체결:{3}, 단위체결:{4}]주문이 체결되었습니다.(주문번호:{5})".format(
+                            chejan["stockName" ],
+                            chejan["stockCode" ],
+                            chejan["orderCount"],
+                            chejan["missCount" ],
+                            chejan["unitCount" ],
+                            chejan["orderNo"   ],
+                        ),
+                    });
                         
             #체결잔고 실시간정보 수신해제 여부
             if not chejan["stockCode"] in self.twChejanStocks.getColumnDatas("stockCode"):
@@ -1046,38 +1155,38 @@ def testLogFile(obj, ext={}, vOrderableAmount=""):
     if type(obj) == Opt10075:
         with open("logging/" + yyyymmdd + "/chejanHis_" + yyyymmdd + ".log", "w", encoding="UTF-8", ) as fileData:
             for index, value in enumerate(obj.__getitem__("mField15")):
-                writeText  = ["계좌번호({0})"        .format(Main.preFormat("", obj.__getitem__("mField01")[index], 10, ">"))];#계좌번호
-                writeText.append(", 주문번호({0})"      .format(Main.preFormat("", obj.__getitem__("mField02")[index],  7, ">")));#주문번호
-                writeText.append(", 관리사번({0})"      .format(Main.preFormat("", obj.__getitem__("mField03")[index],  7, ">")));#관리사번
-                writeText.append(", 종목코드({0})"      .format(Main.preFormat("", obj.__getitem__("mField04")[index],  6, ">")));#종목코드
-                writeText.append(", 업무구분({0})"      .format(Main.preFormat("", obj.__getitem__("mField05")[index],  7, ">")));#업무구분
-                writeText.append(", 주문상태({0})"      .format(Main.preFormat("", obj.__getitem__("mField06")[index],  7, ">")));#주문상태
-                writeText.append(", 종목명({0})"        .format(Main.preFormat("", obj.__getitem__("mField07")[index], 30, "<")));#종목명
-                writeText.append(", 주문수량({0})"      .format(Main.preFormat("", obj.__getitem__("mField08")[index],  7, ">")));#주문수량
-                writeText.append(", 주문가격({0})"      .format(Main.preFormat("", obj.__getitem__("mField09")[index],  7, ">")));#주문가격
-                writeText.append(", 미체결수량({0})"    .format(Main.preFormat("", obj.__getitem__("mField10")[index],  7, ">")));#미체결수량
-                writeText.append(", 체결누계금액({0})"  .format(Main.preFormat("", obj.__getitem__("mField11")[index],  7, ">")));#체결누계금액
-                writeText.append(", 원주문번호({0})"    .format(Main.preFormat("", obj.__getitem__("mField12")[index],  7, ">")));#원주문번호
-                writeText.append(", 주문구분({0})"      .format(Main.preFormat("", obj.__getitem__("mField13")[index],  8, ">")));#주문구분
-                writeText.append(", 매매구분({0})"      .format(Main.preFormat("", obj.__getitem__("mField14")[index],  7, ">")));#매매구분
-                writeText.append(", 시간({0})"          .format(Main.preFormat("", obj.__getitem__("mField15")[index],  7, ">")));#시간
-                writeText.append(", 체결번호({0})"      .format(Main.preFormat("", obj.__getitem__("mField16")[index],  7, ">")));#체결번호
-                writeText.append(", 체결가({0})"        .format(Main.preFormat("", obj.__getitem__("mField17")[index],  7, ">")));#체결가
-                writeText.append(", 체결량({0})"        .format(Main.preFormat("", obj.__getitem__("mField18")[index],  7, ">")));#체결량
-                writeText.append(", 현재가({0})"        .format(Main.preFormat("", obj.__getitem__("mField19")[index],  7, ">")));#현재가
-                writeText.append(", 매도호가({0})"      .format(Main.preFormat("", obj.__getitem__("mField20")[index],  7, ">")));#매도호가
-                writeText.append(", 매수호가({0})"      .format(Main.preFormat("", obj.__getitem__("mField21")[index],  7, ">")));#매수호가
-                writeText.append(", 단위체결가({0})"    .format(Main.preFormat("", obj.__getitem__("mField22")[index],  7, ">")));#단위체결가
-                writeText.append(", 단위체결량({0})"    .format(Main.preFormat("", obj.__getitem__("mField23")[index],  7, ">")));#단위체결량
-                writeText.append(", 당일매매수수료({0})".format(Main.preFormat("", obj.__getitem__("mField24")[index],  7, ">")));#당일매매수수료
-                writeText.append(", 당일매매세금({0})"  .format(Main.preFormat("", obj.__getitem__("mField25")[index],  7, ">")));#당일매매세금
-                writeText.append(", 개인투자자({0})"    .format(Main.preFormat("", obj.__getitem__("mField26")[index],  7, ">")));#개인투자자
+                writeText = ["계좌번호({0})"            .format(Main.preFormat("", obj.__getitem__("mField01")[index]     , 10, ">"))];#계좌번호
+                writeText.append(", 주문번호({0})"      .format(Main.preFormat("", obj.__getitem__("mField02")[index]     ,  7, ">")));#주문번호
+                writeText.append(", 관리사번({0})"      .format(Main.preFormat("", obj.__getitem__("mField03")[index]     ,  7, ">")));#관리사번
+                writeText.append(", 종목코드({0})"      .format(Main.preFormat("", obj.__getitem__("mField04")[index][-6:],  6, ">")));#종목코드
+                writeText.append(", 주문상태({0})"      .format(Main.preFormat("", obj.__getitem__("mField06")[index]     ,  7, ">")));#주문상태
+                writeText.append(", 업무구분({0})"      .format(Main.preFormat("", obj.__getitem__("mField05")[index]     ,  7, ">")));#업무구분
+                writeText.append(", 종목명({0})"        .format(Main.preFormat("", obj.__getitem__("mField07")[index]     , 30, "<")));#종목명
+                writeText.append(", 주문수량({0})"      .format(Main.preFormat("", obj.__getitem__("mField08")[index]     ,  7, ">")));#주문수량
+                writeText.append(", 주문가격({0})"      .format(Main.preFormat("", obj.__getitem__("mField09")[index]     ,  7, ">")));#주문가격
+                writeText.append(", 미체결수량({0})"    .format(Main.preFormat("", obj.__getitem__("mField10")[index]     ,  7, ">")));#미체결수량
+                writeText.append(", 체결누계금액({0})"  .format(Main.preFormat("", obj.__getitem__("mField11")[index]     ,  7, ">")));#체결누계금액
+                writeText.append(", 원주문번호({0})"    .format(Main.preFormat("", obj.__getitem__("mField12")[index]     ,  7, ">")));#원주문번호
+                writeText.append(", 주문구분({0})"      .format(Main.preFormat("", obj.__getitem__("mField13")[index]     ,  8, ">")));#주문구분
+                writeText.append(", 매매구분({0})"      .format(Main.preFormat("", obj.__getitem__("mField14")[index]     ,  7, ">")));#매매구분
+                writeText.append(", 시간({0})"          .format(Main.preFormat("", obj.__getitem__("mField15")[index]     ,  7, ">")));#시간
+                writeText.append(", 체결번호({0})"      .format(Main.preFormat("", obj.__getitem__("mField16")[index]     ,  7, ">")));#체결번호
+                writeText.append(", 체결가({0})"        .format(Main.preFormat("", obj.__getitem__("mField17")[index]     ,  7, ">")));#체결가
+                writeText.append(", 체결량({0})"        .format(Main.preFormat("", obj.__getitem__("mField18")[index]     ,  7, ">")));#체결량
+                writeText.append(", 현재가({0})"        .format(Main.preFormat("", obj.__getitem__("mField19")[index]     ,  7, ">")));#현재가
+                writeText.append(", 매도호가({0})"      .format(Main.preFormat("", obj.__getitem__("mField20")[index]     ,  7, ">")));#매도호가
+                writeText.append(", 매수호가({0})"      .format(Main.preFormat("", obj.__getitem__("mField21")[index]     ,  7, ">")));#매수호가
+                writeText.append(", 단위체결가({0})"    .format(Main.preFormat("", obj.__getitem__("mField22")[index]     ,  7, ">")));#단위체결가
+                writeText.append(", 단위체결량({0})"    .format(Main.preFormat("", obj.__getitem__("mField23")[index]     ,  7, ">")));#단위체결량
+                writeText.append(", 당일매매수수료({0})".format(Main.preFormat("", obj.__getitem__("mField24")[index]     ,  7, ">")));#당일매매수수료
+                writeText.append(", 당일매매세금({0})"  .format(Main.preFormat("", obj.__getitem__("mField25")[index]     ,  7, ">")));#당일매매세금
+                writeText.append(", 개인투자자({0})"    .format(Main.preFormat("", obj.__getitem__("mField26")[index]     ,  7, ">")));#개인투자자
                 writeText.append("\n");
                 fileData.writelines("".join(writeText));
     elif type(obj) == Opt10077:
         with open("logging/" + yyyymmdd + "/trade_" + yyyymmdd + ".log", "w", encoding="UTF-8", ) as fileData:
             for index, value in enumerate(obj.__getitem__("mField05")):
-                writeText  = ["종목코드({0})"        .format(Main.preFormat("", obj.__getitem__("mField09")[index][-6:],  6, ">"))];#종목코드
+                writeText = ["종목코드({0})"            .format(Main.preFormat("", obj.__getitem__("mField09")[index][-6:],  6, ">"))];#종목코드
                 writeText.append(", 종목명({0})"        .format(Main.preFormat("", obj.__getitem__("mField01")[index]     , 30, "<")));#종목명
                 writeText.append(", 매입단가({0})"      .format(Main.preFormat("", obj.__getitem__("mField03")[index]     ,  7, ">")));#매입단가
                 writeText.append(", 체결가({0})"        .format(Main.preFormat("", obj.__getitem__("mField04")[index]     ,  7, ">")));#체결가
@@ -1090,24 +1199,24 @@ def testLogFile(obj, ext={}, vOrderableAmount=""):
     else:
         with open("logging/" + yyyymmdd + "/order/buySellPrice.log", "a", encoding="UTF-8", ) as fileData:
             writeText =  ["[{0}:{1}]"          .format(datetime.datetime.now(), "buySellPrice")];
-            writeText.append(", 주문번호({0})"    .format(Main.preFormat("", obj["orderNo"    ],  7, "<")));
-            writeText.append(", 종목명({0})"      .format(Main.preFormat("", obj["stockName"  ], 20, "<")));
-            writeText.append(", 종목코드({0})"    .format(Main.preFormat("", obj["stockCode"  ],  6, ">")));
-            writeText.append(", 매매구분({0})"    .format(Main.preFormat("", obj["hogaGb"     ],  8, ">")));
-            writeText.append(", 주문가격({0})"    .format(Main.preFormat("", obj["orderPrice" ],  7, ">")));
-            writeText.append(", 주문수량({0})"    .format(Main.preFormat("", obj["orderCount" ],  7, ">")));
-            writeText.append(", 체결수량({0})"    .format(Main.preFormat("", obj["chejanCount"],  3, ">")));
-            writeText.append(", 단위체결가({0})"  .format(Main.preFormat("", obj["unitPrice"  ],  7, ">")));
-            writeText.append(", 단위체결량({0})"  .format(Main.preFormat("", obj["unitCount"  ],  7, ">")));
+            writeText.append(", 주문번호({0})"    .format(Main.preFormat("", obj["orderNo"    ]     ,  7, "<")));
+            writeText.append(", 종목명({0})"      .format(Main.preFormat("", obj["stockName"  ]     , 20, "<")));
+            writeText.append(", 종목코드({0})"    .format(Main.preFormat("", obj["stockCode"  ][-6:],  6, ">")));
+            writeText.append(", 매매구분({0})"    .format(Main.preFormat("", obj["hogaGb"     ]     ,  8, ">")));
+            writeText.append(", 주문가격({0})"    .format(Main.preFormat("", obj["orderPrice" ]     ,  7, ">")));
+            writeText.append(", 주문수량({0})"    .format(Main.preFormat("", obj["orderCount" ]     ,  7, ">")));
+            writeText.append(", 체결수량({0})"    .format(Main.preFormat("", obj["chejanCount"]     ,  3, ">")));
+            writeText.append(", 단위체결가({0})"  .format(Main.preFormat("", obj["unitPrice"  ]     ,  7, ">")));
+            writeText.append(", 단위체결량({0})"  .format(Main.preFormat("", obj["unitCount"  ]     ,  7, ">")));
             
             if obj["hogaGb"] == "+매수":
-                writeText.append(", 수수료({0})"      .format(Main.preFormat("", ext["buyTax" ]  , 7, ">")));
+                writeText.append(", 수수료({0})"      .format(Main.preFormat("", ext["buyTax"   ], 7, ">")));
                 writeText.append(", 세금({0})"        .format(Main.preFormat("", ""              , 3, ">")));
                 writeText.append(", 총금액({0})"      .format(Main.preFormat("", ext["buyAmount"], 7, ">")));
                 writeText.append(", 매수가능금액({0})".format(Main.preFormat("", vOrderableAmount, 7, ">")));
             elif obj["hogaGb"] == "-매도":
-                writeText.append(", 수수료({0})"      .format(Main.preFormat("", ext["sellTax"]  , 7, ">")));
-                writeText.append(", 세금({0})"        .format(Main.preFormat("", ext["tax"    ]  , 3, ">")));
+                writeText.append(", 수수료({0})"      .format(Main.preFormat("", ext["sellTax"  ], 7, ">")));
+                writeText.append(", 세금({0})"        .format(Main.preFormat("", ext["tax"      ], 3, ">")));
                 writeText.append(", 총금액({0})"      .format(Main.preFormat("", ext["nowAmount"], 7, ">")));
                 writeText.append(", 매수가능금액({0})".format(Main.preFormat("", vOrderableAmount, 7, ">")));
             else:

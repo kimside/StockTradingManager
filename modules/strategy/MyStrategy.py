@@ -23,22 +23,21 @@ class MyStrategy(AbstractStrategy):
         self.tradeMaxCount = self.appSettings.vTradeMaxCount;                 #자동매매 거래 종목 갯수 제한
         self.buyRateActive = self.appSettings.vBuyRate;                       #매수 비율/금액지정 여부(True: 비율, False:금액지정)
         self.buyRate       = self.appSettings.vBuyRateValue;                  #매수 매수가능금액 대비 지정비율
-        self.buyAmount     = self.appSettings.vBuyAmountValue;                #매수 지정금액태
+        self.buyAmount     = self.appSettings.vBuyAmountValue;                #매수 지정금액
         self.currentTab    = self.appSettings.currentTab;                     #TrailingStop/StopLoss 활성화 탭(0:TrailingStop, 1:StopLoss)
 
         self.tsProfitRate    = self.appSettings.vtsTargetProfit;         #TrailingStop 목표수익율
         self.tsLossRate      = self.appSettings.vtsTargetLoss;           #TrailingStop 목표손실율
-
         self.tsDivBuyActive  = self.appSettings.vtsTouchDivideBuyActive; #TrailingStop 추가매수 활성화 여부
         self.tsDivBuyCount   = self.appSettings.vtsTouchDivideBuy;       #TrailingStop 추가매수 횟수
         self.tsDivProfitRate = self.appSettings.vtsTouchDivideProfit;    #TrailingStop 목표수익율 달성 후 분할매도 추가수익율
         self.tsDivRate       = self.appSettings.vtsTouchDivideRate;      #TrailingStop 목표수익율 달성 후 분할매도 비율
         self.tsServeRate     = self.appSettings.vtsTouchDivideServeRate; #TrailingStop 목표수익율 달성 후 보존수익율
         
-        self.slProfit       = self.appSettings.vslTargetProfit;         #StopLoss 목표수익율
-        self.slLoss         = self.appSettings.vslTargetLoss;           #StopLoss 목표손실율
-        self.slDivBuyActive = self.appSettings.vslTouchDivideBuyActive; #StopLoss 추가매수 활성화 여부
-        self.slDivBuyCount  = self.appSettings.vslTouchDivideBuy;       #StopLoss 추가매수 횟수
+        self.slProfit       = self.appSettings.vslTargetProfit;          #StopLoss 목표수익율
+        self.slLoss         = self.appSettings.vslTargetLoss;            #StopLoss 목표손실율
+        self.slDivBuyActive = self.appSettings.vslTouchDivideBuyActive;  #StopLoss 추가매수 활성화 여부
+        self.slDivBuyCount  = self.appSettings.vslTouchDivideBuy;        #StopLoss 추가매수 횟수
 
         #조건검색 결과 전략분석
         self.conStrategy = {};
@@ -83,7 +82,7 @@ class MyStrategy(AbstractStrategy):
                             "stockName" : obj["f302" ],
                         });
 
-                        if result != 0:
+                        if result != 0:#모의서버 매수금지 항목이거나 기타 확인 과정의 오류가 발생한다고 해도.. 0값이 넘어오는데.. 이건 어쩌나?
                             self.appSettings.orderList.remove((obj["f9001"], obj["f302"]));
                     else:
                         result = -1;
@@ -118,6 +117,7 @@ class MyStrategy(AbstractStrategy):
         3021: StopLoss(매수) 손실 추가매수,
         3022: StopLoss(매도) 수익달성,
         3023: StopLoss(매도) 손실 전량매도,
+        3999: 기타주문,
         """
         orderCount = chejanStock["orderCount"] if chejanStock["orderStatus"] == "접수" else chejanStock["missCount"];
         if orderCount > 0:
@@ -397,13 +397,13 @@ class MyStrategy(AbstractStrategy):
                     "sOrgOrderNo": order["sOrgOrderNo"],#원주문번호
                 });
             
-            if result == 0:
-                self.parent.addConsoleSlot({
-                    "sRQName": order["reason"],
-                    "sTrCode": "",
-                    "sScrNo" : order["sScrNo"],
-                    "sMsg"   : "{0}({1}) {2}주".format(stock["stockName"], stock["stockCode"], order["nQty"]),
-                });
+            #if result == 0:
+            #    self.parent.addConsoleSlot({
+            #        "sRQName": order["reason"],
+            #        "sTrCode": "",
+            #        "sScrNo" : order["sScrNo"],
+            #        "sMsg"   : "{0}({1}) {2}주".format(stock["stockName"], stock["stockCode"], order["nQty"]),
+            #    });
             elif result == -308:
                 time.sleep(0.25);
             

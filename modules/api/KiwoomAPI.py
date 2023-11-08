@@ -254,13 +254,13 @@ class KiwoomAPI(LogMaker, metaclass=Singleton):
 
                 if self.onReceiveTrDataLoop.isRunning():
                     self.onReceiveTrDataLoop.exit();
-        else:
-            obj = {
-                "sScrNo" : sScrNo,
-                "sRQName": sRQName,
-                "sTrCode": sTrCode,
-                "orderNo": self.api.dynamicCall("GetCommData(QString, QString, int, QString)", sTrCode, sRQName, 0, "field").strip(),
-            }
+        #else:
+        #    obj = {
+        #        "sScrNo" : sScrNo,
+        #        "sRQName": sRQName,
+        #        "sTrCode": sTrCode,
+        #        "orderNo": self.api.dynamicCall("GetCommData(QString, QString, int, QString)", sTrCode, sRQName, 0, "field").strip(),
+        #    };
                 
     #조건검색목록 요청처리
     def getConditionLoad(self):
@@ -972,14 +972,23 @@ class KiwoomAPI(LogMaker, metaclass=Singleton):
     #sScrNo,  //화면번호
     #sRQName, //사용자 구분명
     #sTrCode, //TR이름
-    #sMsg,    //서버에서 전달하는 메세지
+    #sMsg,    //kiwoom서버에서 전달받은 메세지
     def onReceiveMsg(self, sScrNo, sRQName, sTrCode, sMsg):
-        self.apiMsgSignal.emit({
-            "sScrNo" : sScrNo,
-            "sRQName": sRQName,
-            "sTrCode": sTrCode,
-            "sMsg"   : "{0} (message from kiwoom Server...)".format(sMsg.strip()),
-        });
+        sMsg = sMsg.strip();
+        #모의투자 제한종목이거나, 취소주문에 수량이나 취소주문 찰나에 체결 되어 원주문이 없을때.. 여기로 결과가 반환된다.
+        #근데.. 주문에 대한 정보가 없는데?? 어케 알지..
+        #100000: 정상
+        #RC4007: 모의투자 매매제한 종목입니다.
+        #RC4033: 모의투자 정정/취소할 수량이 없습니다.
+        msgCode = "100000" if "100000" in sMsg else sMsg[1:7];
+
+        if msgCode != "100000":
+            self.apiMsgSignal.emit({
+                "sScrNo" : sScrNo,
+                "sRQName": sRQName,
+                "sTrCode": sTrCode,
+                "sMsg"   : "{0} (message from kiwoom Server...)".format(sMsg),
+            });
 
         self.writeLog("kiwoom", {
             "f920"   : sScrNo,
@@ -1069,9 +1078,9 @@ class KiwoomAPI(LogMaker, metaclass=Singleton):
             #});
 
             self.writeLog("kiwoom", {
-                "f920"  : sScrNo,
+                "f920"   : sScrNo,
                 "sTrCode": "sendOrder",
-                "msg"   : ("{0}({1})를 {2}({3})주를 {4} 신청 오류가 발생하였습니다.({5})").format(masterCodeName, sCode, nPrice, nQty, self.nOrderType[nOrderType], self.errCodes[result]),
+                "msg"    : ("{0}({1})를 {2}({3})주를 {4} 신청 오류가 발생하였습니다.({5})").format(masterCodeName, sCode, nPrice, nQty, self.nOrderType[nOrderType], self.errCodes[result]),
             });
 
             result = -1;
