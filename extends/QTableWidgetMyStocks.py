@@ -158,7 +158,6 @@ class QTableWidgetMyStocks(QtWidgets.QTableWidget):
                             iCol.setData(QtCore.Qt.UserRole, value);
                             iCol.setForeground(QtGui.QBrush(QtGui.QColor(bgColor)));
                         
-            
             self.setSortingEnabled(True);
         elif type(datas) == dict:
             self.addRows([datas]);

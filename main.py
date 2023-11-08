@@ -241,13 +241,14 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
             {"id": "missCount"   , "name": "미체결수량", "type": int},
             {"id": "chejanGb"    , "name": "매매구분"  , "type": str, "align": QtCore.Qt.AlignCenter},
             {"id": "oriOrderNo"  , "name": "원주문번호", "type": str},
-            {"id": "screenNo"    , "name": "화면번호"  , "type": str, "isVisible": False},
-            {"id": "bgCol"       , "name": "배경색"    , "type": int, "isVisible": False, "isBg": True},
+            {"id": "screenNo"    , "name": "화면번호"  , "type": str,  "isVisible": False},
+            {"id": "bgCol"       , "name": "배경색"    , "type": int,  "isVisible": False, "isBg": True},
+            {"id": "isCancel"    , "name": "취소신청"  , "type": bool, "isVisible": False}
         ]);
         self.twChejanStocks.sortItems(0, QtCore.Qt.DescendingOrder);
 
         self.twChejanHisStocks.initWidget([
-            {"id": "chejanTime"  , "name": "요청시간"  , "type": datetime.datetime, "formatter": "{0:%Y-%m-%d %H:%M:%S}"},
+            {"id": "chejanTime"  , "name": "요청시간"  , "type": datetime.datetime, "formatter": "{0:%Y-%m-%d %H:%M:%S.%f}"},
             {"id": "orderNo"     , "name": "주문번호"  , "type": str},
             {"id": "hogaGb"      , "name": "주문구분"  , "type": str, "align": QtCore.Qt.AlignCenter},
             {"id": "stockCode"   , "name": "종목코드"  , "type": str},
@@ -445,6 +446,7 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
                             "chejanGb"   : opt10075.__getitem__("mField14")[index],
                             "oriOrderNo" : opt10075.__getitem__("mField12")[index],
                             "bgCol"      : bgCol,
+                            "isCancel"   : False,
                         };
 
                         #미체결잔고 조회시 접수상태인것은 아직 처리가 되지 않은 항목으로 계좌에 반영해야한다.
@@ -565,9 +567,10 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
                     if self.appSettings.vOrderCancelSecActive:
                         diff = datetime.datetime.now() - chejanStock["chejanTime"];
                         if diff.seconds > self.appSettings.vOrderCancelSec                                   and \
+                           chejanStock["isCancel"] == False                                                  and \
                            not chejanStock["orderNo"] in self.twChejanHisStocks.getColumnDatas("oriOrderNo") and \
                            chejanStock["hogaGb"] in ["+매수", "-매도"]:
-                            self.myStrategy.orderCancel(chejanStock);
+                           self.myStrategy.orderCancel(chejanStock);
             
             #조건검색결과 정보 업데이트
             if "8000" in sScrNoList:
@@ -659,14 +662,14 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
             #(분할로 매수될 경우 단위체결가가 다르기 때문에.. 매수 접수된 금액기준으로 계산하여 세금 반영, 때문에 오차가 발생할 수 있다.)
             #ex) 1700원을 10주 매도하는데 1개씩 매도체결될 경우 각각의 수수료와 세금은 없지만.. 매도주문건 전체로 보면.. 17000원에 대한.. 수수료와 세금이 존재한다.
             #    단 매도주문을 1주씩 따로따로 하면.. 수수료와 세금도 각각 개별 주문별로 따로 처리해서 상관없다.. (초당 sendOrder 5건 제한으로... 아쉽...)
-            if chejan["hogaGb"] == "접수" and chejan["hogaGb"] == "매수정정":
+            if chejan["orderStatus"] == "접수" and chejan["hogaGb"] == "매수정정":
                 #[+매수] 주문의 수량을 정정한다...(부분체결 진행중이면???)
                 chejanStocks = self.twChejanStocks.getRowDatas(chejan["oriOrderNo"]);
                 for chejanStock in chejanStocks:
                     chejanStock["orderCount"] = int(chejan["orderCount"]);
                     self.twChejanStocks.addRows(chejanStock);
                 
-            elif chejan["hogaGb"] == "접수" and chejan["hogaGb"] == "매도정정":
+            elif chejan["orderStatus"] == "접수" and chejan["hogaGb"] == "매도정정":
                 #[-매도] 주문의 수량을 정정한다...(부분체결 진행중이면???)
                 #보유주식의 현재 주문가능수량을 넘지않게.... 그리고 기존 주문보다 적게 변경한다면 주문가능수량은 보유주식의 주문가능수량에 반영
                 chejanStocks = self.twChejanStocks.getRowDatas(chejan["oriOrderNo"]);
@@ -680,7 +683,7 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
                     chejanStock["orderCount"] = int(chejan["orderCount"]);
                     self.twChejanStocks.addRows(chejanStock);
                 
-            elif chejan["hogaGb"] == "접수" and chejan["hogaGb"] == "매수취소":
+            elif chejan["orderStatus"] == "접수" and chejan["hogaGb"] == "매수취소":
                 """
                 3001: 신규매수,
                 3011: TrailingStop(매수) 손실 추가매수,
@@ -688,7 +691,8 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
                 """
                 #개발사항: 매수 취소시..  전략부분 원복... 근디.. 최초 매수인지, 추가매수인지 모르는디.. 어떻게 확인 처리하지??
                 if chejan["screenNo"] == "3001":
-                    self.appSettings.orderList.remove((chejan["stockCode"], chejan["stockName"]));
+                    if (chejan["stockCode"], chejan["stockName"]) in self.appSettings.orderList:
+                        self.appSettings.orderList.remove((chejan["stockCode"], chejan["stockName"]));
                 elif chejan["screenNo"] == ["3011", "3021"]:
                     myStrategy = self.appSettings.myStrategy[chejan["stockCode"]];
                     if chejan["screenNo"] == "3011":
@@ -699,7 +703,7 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
                 #원주문번호를 찾아 해당 주문건을 삭제한다.
                 self.twChejanStocks.delRows(chejan["oriOrderNo"]);
                 
-            elif chejan["hogaGb"] == "접수" and chejan["hogaGb"] == "매도취소":
+            elif chejan["orderStatus"] == "접수" and chejan["hogaGb"] == "매도취소":
                 """
                 3012: TrailingStop(매도) 수익달성,
                 3013: TrailingStop(매도) 수익보존,
@@ -1149,7 +1153,7 @@ def testLogFile(obj, ext={}, vOrderableAmount=""):
                 writeText.append(", 매수가능금액({0})".format(Main.preFormat("", vOrderableAmount, 7, ">")));
             
             writeText.append("\n");
-            fileData.writelines(writeText + "\n");
+            fileData.writelines(writeText);
 
 if __name__ == "__main__":
     ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("mycompany.myproduct.subproduct.version");#임의의 명칭을 사용해도 됨

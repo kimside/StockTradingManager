@@ -981,7 +981,7 @@ class KiwoomAPI(LogMaker, metaclass=Singleton):
             "sMsg"   : "{0} (message from kiwoom Server...)".format(sMsg.strip()),
         });
 
-        self.writeLog("kiwoon", {
+        self.writeLog("kiwoom", {
             "f920"   : sScrNo,
             "sTrCode": sTrCode,
             "msg"    : sMsg,
@@ -1044,12 +1044,12 @@ class KiwoomAPI(LogMaker, metaclass=Singleton):
         result = self.api.dynamicCall("SendOrder(QString, QString, QString, int, QString, int, int, QString, QString)", [sRQName, sScrNo, sAccNo, nOrderType, sCode, nQty, nPrice, sHogaGb, sOrgOrderNo]);
         
         if result == 0:
-            self.apiMsgSignal.emit({
-                "sScrNo" : sScrNo,
-                "sRQName": sRQName,
-                "sTrCode": sCode,
-                "sMsg"   : ("{0}({1})를 {2}({3})주를 {4} 신청하였습니다.(result:{5})").format(masterCodeName, sCode, nPrice, nQty, self.nOrderType[nOrderType], result),
-            });
+            #self.apiMsgSignal.emit({
+            #    "sScrNo" : sScrNo,
+            #    "sRQName": sRQName,
+            #    "sTrCode": sCode,
+            #    "sMsg"   : "{0}({1})를 {2}({3})주를 {4} 신청하였습니다.(result:{5})".format(masterCodeName, sCode, nPrice, nQty, self.nOrderType[nOrderType], result),
+            #});
                 
             self.writeLog("order", {
                 "f302"  : masterCodeName,
@@ -1061,12 +1061,12 @@ class KiwoomAPI(LogMaker, metaclass=Singleton):
                 "reason": reason,
             });
         else:
-            self.apiMsgSignal.emit({
-                "sScrNo" : sScrNo,
-                "sRQName": sRQName,
-                "sTrCode": sCode,
-                "sMsg"   : ("{0}({1})를 {2}({3})주를 {4} 신청 오류가 발생하였습니다.({5})").format(masterCodeName, sCode, nPrice, nQty, self.nOrderType[nOrderType], self.errCodes[result]),
-            });
+            #self.apiMsgSignal.emit({
+            #    "sScrNo" : sScrNo,
+            #    "sRQName": sRQName,
+            #    "sTrCode": sCode,
+            #    "sMsg"   : "{0}({1})를 {2}({3})주를 {4} 신청 오류가 발생하였습니다.({5})".format(masterCodeName, sCode, nPrice, nQty, self.nOrderType[nOrderType], self.errCodes[result]),
+            #});
 
             self.writeLog("kiwoom", {
                 "f920"  : sScrNo,

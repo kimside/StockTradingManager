@@ -295,7 +295,7 @@ class LogMaker:
             "f257"     : {"size":  0, "align":  "", "desc": "거래형성비율"},
             "f214"     : {"size":  0, "align":  "", "desc": "장시작예상잔여시간"},
             "f9001"    : {"size":  6, "align":  "", "desc": "종목코드,업종코드"},
-            "f302"     : {"size": 20, "align": "<", "desc": "종목명"},
+            "f302"     : {"size": 22, "align": "<", "desc": "종목명"},
             "f9068"    : {"size":  0, "align":  "", "desc": "VI발동구분"},
             "f9008"    : {"size":  0, "align":  "", "desc": "KOSPI,KOSDAQ,전체구분"},
             "f9075"    : {"size":  0, "align":  "", "desc": "장전구분"},
@@ -389,17 +389,18 @@ class LogMaker:
             "<": lambda s: s + fill * count,
             "^": lambda s: fill * (count / 2) + s + fill * (count / 2 + count % 2),
              "": lambda s: s,
-        }[align](string)
+        }[align](string);
 
     def writeLog(self, type, obj):
+        fileDiv = "noTypeLog";
         if type == "condition":
             fileDiv    = "onReceiveRealCondition";
-        elif type == "kiwoon":
+        elif type == "kiwoom":
             fileDiv    = "onReceiveMsg";
         elif type == "real":
             fileDiv    = "onReceiveRealData({0})".format(obj["sRealType"]);
         elif type == "order":
-            fileDiv    = "sendOrder({0})".format(self.nOrderType[obj["f905"]]);
+            fileDiv    = "sendOrder";
         elif type == "chejan":
             fileDiv    = "onReceiveChejanData(che)" if "gubun" in obj and obj["gubun"] == "0" else "onReceiveChejanData(jan)";
 
