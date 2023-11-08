@@ -187,7 +187,7 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
         self.lProcCnt = QtWidgets.QLabel("TPS:");
         self.lProcCnt.setFixedWidth(35);
         self.lProcCnt.setAlignment(QtCore.Qt.AlignVCenter | QtCore.Qt.AlignRight);
-        self.vProcCnt = QtWidgets.QLabel("9999");
+        self.vProcCnt = QtWidgets.QLabel("0");
         self.vProcCnt.setFixedWidth(30);
         self.vProcCnt.setAlignment(QtCore.Qt.AlignVCenter | QtCore.Qt.AlignRight);
         
