@@ -93,13 +93,13 @@ class ModalInformation(QtWidgets.QDialog, uic.loadUiType(resource_path("modules/
                     tsDivSellPrice = myStrategy["averagePrice"] + int(myStrategy["averagePrice"] * (tsProfit + (tsDivSell * tsDivProfit)) / 100);
                 
                 if tsDivBuyActive and not myStrategy["tsActive"]:
-                    tsAddBuyPrice = myStrategy["averagePrice"] + int(myStrategy["averagePrice"] * (tsLoss * tsAddBuy) / 100);
+                    tsAddBuyPrice = myStrategy["averagePrice"] + int(myStrategy["averagePrice"] * (tsLoss + (tsAddBuy * tsLoss)) / 100);
 
                     if myStrategy["tsAddBuy"] > 0 and bgCol == 0:
                         bgCol = -1
             else:
                 if slDivBuyActive:
-                    slAddBuyPrice = myStrategy["averagePrice"] + int(myStrategy["averagePrice"] * (slLoss * slAddBuy) / 100);
+                    slAddBuyPrice = myStrategy["averagePrice"] + int(myStrategy["averagePrice"] * (slLoss * (slAddBuy + 1)) / 100);
 
                     if myStrategy["slAddBuy"] > 0 and bgCol == 0:
                         bgCol = -1

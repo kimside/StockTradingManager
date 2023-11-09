@@ -184,16 +184,28 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
         self.processCounter.timeout.connect(self.clearProcCnt);
         self.processCounter.start();
 
-        self.lProcCnt = QtWidgets.QLabel("TPS:");
-        self.lProcCnt.setFixedWidth(35);
+        self.lProcCnt = QtWidgets.QLabel("TPS(Max/Now):");
+        self.lProcCnt.setFixedWidth(105);
         self.lProcCnt.setAlignment(QtCore.Qt.AlignVCenter | QtCore.Qt.AlignRight);
+        self.vProcMax = QtWidgets.QLabel("0");
+        self.vProcMax.setFixedWidth(20);
+        self.vProcMax.setAlignment(QtCore.Qt.AlignVCenter | QtCore.Qt.AlignRight);
+        self.lProcDiv = QtWidgets.QLabel("/");
+        self.lProcDiv.setFixedWidth(5);
+        self.lProcDiv.setAlignment(QtCore.Qt.AlignVCenter | QtCore.Qt.AlignCenter);
         self.vProcCnt = QtWidgets.QLabel("0");
-        self.vProcCnt.setFixedWidth(30);
+        self.vProcCnt.setFixedWidth(20);
         self.vProcCnt.setAlignment(QtCore.Qt.AlignVCenter | QtCore.Qt.AlignRight);
+        self.lProcMargin = QtWidgets.QLabel(" ");
+        self.lProcMargin.setFixedWidth(5);
+        self.lProcMargin.setAlignment(QtCore.Qt.AlignVCenter | QtCore.Qt.AlignRight);
         
         self.statusBar().addPermanentWidget(self.lProcCnt);
+        self.statusBar().addPermanentWidget(self.vProcMax);
+        self.statusBar().addPermanentWidget(self.lProcDiv);
         self.statusBar().addPermanentWidget(self.vProcCnt);
-
+        self.statusBar().addPermanentWidget(self.lProcMargin);
+        
         if self.appSettings.vAutoLogin:
             self.actLoginSlot();
     
@@ -218,7 +230,15 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
                     "sMsg"   : "Telegram이 설정되어 있지 않습니다.",
                 });
 
+    #TPS정보 갱신
     def clearProcCnt(self):
+        max = int(self.vProcMax.text());
+        cur = int(self.vProcCnt.text());
+
+        if max < cur:
+            max = cur;
+        
+        self.vProcMax.setText(str(max));
         self.vProcCnt.setText(str(0));
     
     #거래시간 이후 자동매매종료
@@ -659,6 +679,7 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
                 #(현재 주문번호가 chejanHis에 원주문번호에 존재한다면 무시해야함)
                 if not chejan["orderNo"] in self.twChejanHisStocks.getColumnDatas("oriOrderNo"):
                     self.twChejanStocks.addRows(chejan);
+                
             self.twChejanHisStocks.addRows(chejan);
 
             #매수/매도 처리 후, 수신 데이터에 미체결 수량이 없다면.. 미체결 잔고 QTableWidget에서 해당 행 삭제
@@ -671,7 +692,7 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
             if chejan["orderStatus"] == "접수":
                 orderScrNoName = "기타주문";
                 if chejan.get("screenNo", "3999") in self.orderScrNo:
-                    orderScrNoName = chejan.get("screenNo", "3999");
+                    orderScrNoName = self.orderScrNo[chejan.get("screenNo", "3999")];
                 
                 if chejan["hogaGb"] == "매수정정":
                     #[+매수] 주문의 수량을 정정한다...(부분체결 진행중이면???)
@@ -681,7 +702,7 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
                         self.twChejanStocks.addRows(chejanStock);
 
                     self.addConsoleSlot({
-                        "sRQName": chejan["hogaGb"],
+                        "sRQName": orderScrNoName,
                         "sTrCode": "",
                         "sScrNo" : chejan["screenNo"],
                         "sMsg"   : "{0}({1}) 정정주문이 접수되었습니다.(원주문번호:{2})".format(
@@ -706,7 +727,7 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
                         self.twChejanStocks.addRows(chejanStock);
                     
                     self.addConsoleSlot({
-                        "sRQName": chejan["hogaGb"],
+                        "sRQName": orderScrNoName,
                         "sTrCode": "",
                         "sScrNo" : chejan["screenNo"],
                         "sMsg"   : "{0}({1}) 정정주문이 접수되었습니다.(원주문번호:{2})".format(
@@ -733,7 +754,7 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
                     #원주문번호를 찾아 해당 주문건을 삭제한다.
                     self.twChejanStocks.delRows(chejan["oriOrderNo"]);
                     self.addConsoleSlot({
-                        "sRQName": chejan["hogaGb"],
+                        "sRQName": orderScrNoName,
                         "sTrCode": "",
                         "sScrNo" : chejan["screenNo"],
                         "sMsg"   : "{0}({1}) '{2}' 취소가 접수되었습니다.(원주문번호:{3})".format(
@@ -770,7 +791,7 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
                     #원주문번호를 찾아 해당 주문건을 삭제한다.
                     self.twChejanStocks.delRows(chejan["oriOrderNo"]);
                     self.addConsoleSlot({
-                        "sRQName": chejan["hogaGb"],
+                        "sRQName": orderScrNoName,
                         "sTrCode": "",
                         "sScrNo" : chejan["screenNo"],
                         "sMsg"   : "{0}({1}) '{2}' 취소가 접수되었습니다.(원주문번호:{3})".format(
@@ -782,7 +803,7 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
                     });
                 elif chejan["hogaGb"] == "+매수":
                     self.addConsoleSlot({
-                        "sRQName": chejan["hogaGb"],
+                        "sRQName": orderScrNoName,
                         "sTrCode": "",
                         "sScrNo" : chejan["screenNo"],
                         "sMsg"   : "{0}({1}) '{2}' 주문이 접수되었습니다.(주문번호:{3})".format(
@@ -792,9 +813,9 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
                             chejan["oriOrderNo"],
                         ),
                     });
-                elif chejan["hogaGb"] == "-매수":
+                elif chejan["hogaGb"] == "-매도":
                     self.addConsoleSlot({
-                        "sRQName": chejan["hogaGb"],
+                        "sRQName": orderScrNoName,
                         "sTrCode": "",
                         "sScrNo" : chejan["screenNo"],
                         "sMsg"   : "{0}({1}) '{2}' 주문이 접수되었습니다.(주문번호:{3})".format(
@@ -1095,7 +1116,7 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
             obj["sRQName"] = "기타";
         
         msg = ["[{0}]: " .format(datetime.datetime.now())];
-        msg.append("{0}, ".format(self.preFormat(obj["sRQName"] if obj["sRQName"] != "" else obj["sTrCode"], 30, "<")));
+        msg.append("{0}, ".format(self.preFormat(obj["sRQName"] if obj["sRQName"] != "" else obj["sTrCode"], 32, "<")));
         msg.append("{0}".format(obj["sMsg"]));
         self.tbConsole.append("".join(msg));
 

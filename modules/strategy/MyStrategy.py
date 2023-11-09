@@ -219,7 +219,7 @@ class MyStrategy(AbstractStrategy):
 
         else:
             #목표 수익율 미진입(손실율에 도달했다면)
-            if nowPrice < myStrategy["averagePrice"] + int(myStrategy["averagePrice"] * (self.tsLossRate * myStrategy["tsAddBuy"]) / 100):
+            if nowPrice < myStrategy["averagePrice"] + int(myStrategy["averagePrice"] * (self.tsLossRate + (self.tsLossRate * myStrategy["tsAddBuy"]) / 100)):
                 if self.tsDivBuyActive and self.tsDivBuyCount > myStrategy["tsAddBuy"]:
                     #추가매수(TrailingStop 추가매수 활성화, TrailingStop 추가매수 횟수확인)
                     orderCount = self.getBuyCount(nowPrice);
@@ -280,7 +280,7 @@ class MyStrategy(AbstractStrategy):
                 if result != 0:
                     myStrategy["slDivSell"] -= 1;
                 
-        elif nowPrice < myStrategy["averagePrice"] + int(myStrategy["averagePrice"] * (self.slLoss * myStrategy["slAddBuy"]) / 100):
+        elif nowPrice < myStrategy["averagePrice"] + int(myStrategy["averagePrice"] * (self.slLoss + (self.slLoss * myStrategy["slAddBuy"]) / 100)):
             if self.slDivBuyActive and self.slDivBuyCount > myStrategy["slAddBuy"]:
                 orderCount = self.getBuyCount(nowPrice);
                 if orderCount > 0:
@@ -356,13 +356,14 @@ class MyStrategy(AbstractStrategy):
                 self.parent.twMyStocks.addRows(stock)
                 
                 result = self.parent.sendOrder({
-                    "sAccNo"     : self.parent.gbMyAccount.uValue1.currentData(),
-                    "sScrNo"     : order["sScrNo"    ],#화면번호
-                    "nOrderType" : order["nOrderType"],#주문유형 1:신규매수, 2:신규매도 3:매수취소, 4:매도취소, 5:매수정정, 6:매도정정
-                    "sCode"      : order["sCode"     ],#종목코드
-                    "nQty"       : order["nQty"      ],#주문수량
-                    "nPrice"     : order["nPrice"    ],#주문가격
-                    "reason"     : order["reason"    ],#주문사유
+                    "sRQName"   : "{0}({1})".format(stock["stockName"], stock["stockCode"]),
+                    "sAccNo"    : self.parent.gbMyAccount.uValue1.currentData(),
+                    "sScrNo"    : order["sScrNo"    ],#화면번호
+                    "nOrderType": order["nOrderType"],#주문유형 1:신규매수, 2:신규매도 3:매수취소, 4:매도취소, 5:매수정정, 6:매도정정
+                    "sCode"     : order["sCode"     ],#종목코드
+                    "nQty"      : order["nQty"      ],#주문수량
+                    "nPrice"    : order["nPrice"    ],#주문가격
+                    "reason"    : order["reason"    ],#주문사유
                 });
 
                 #chejanSignalSlot처리하려고 했는데.. QTableWidget갱신에 시간이 오래 걸리면 무한 매도 주문이 나가서 서버랑 연결이 끊어짐..
@@ -374,19 +375,21 @@ class MyStrategy(AbstractStrategy):
             elif order["nOrderType"] == 1:
                 #매수주문
                 result = self.parent.sendOrder({
-                    "sAccNo"     : self.parent.gbMyAccount.uValue1.currentData(),
-                    "sScrNo"     : order["sScrNo"    ],#화면번호
-                    "nOrderType" : order["nOrderType"],#주문유형 1:신규매수, 2:신규매도 3:매수취소, 4:매도취소, 5:매수정정, 6:매도정정
-                    "sCode"      : order["sCode"     ],#종목코드
-                    "nQty"       : order["nQty"      ],#주문수량
-                    "nPrice"     : order["nPrice"    ],#주문가격
-                    "reason"     : order["reason"    ],#주문사유
+                    "sRQName"   : "{0}({1})".format(stock["stockName"], stock["stockCode"]),
+                    "sAccNo"    : self.parent.gbMyAccount.uValue1.currentData(),
+                    "sScrNo"    : order["sScrNo"    ],#화면번호
+                    "nOrderType": order["nOrderType"],#주문유형 1:신규매수, 2:신규매도 3:매수취소, 4:매도취소, 5:매수정정, 6:매도정정
+                    "sCode"     : order["sCode"     ],#종목코드
+                    "nQty"      : order["nQty"      ],#주문수량
+                    "nPrice"    : order["nPrice"    ],#주문가격
+                    "reason"    : order["reason"    ],#주문사유
                 });
 
             elif order["nOrderType"] in [3, 4]:
                 #매수취소(3), #매도취소(4)
                 #취소항목은 addChejanSlot에서 완료 메세지를 받으면 그때 처리하자....
                 result = self.parent.sendOrder({
+                    "sRQName"    : "{0}({1})".format(stock["stockName"], stock["stockCode"]),
                     "sAccNo"     : self.parent.gbMyAccount.uValue1.currentData(),
                     "nOrderType" : order["nOrderType" ],#주문유형 1:신규매수, 2:신규매도 3:매수취소, 4:매도취소, 5:매수정정, 6:매도정정
                     "sScrNo"     : order["sScrNo"     ],#화면번호
