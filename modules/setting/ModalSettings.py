@@ -5,9 +5,9 @@ from PyQt5               import uic, QtWidgets, QtCore, QtGui;
 #프로그램 기본 설정
     #당일 거래한 종목 조건식에서 다시 나와도 재매수금지
     #당일청산설정(15:10분에 전량 시장가 매도)
-    #계좌 익절 수익율(목표이익에 도달하면 전체 매도 후 프로그램 종료)
-    #계좌 손절 수익율(목표손해에 도달하면 전체 매도 후 프로그램 종료)
-    #매수금액비율(지정금액, %지정) 매수가능금액 기준으로 처리함
+    #계좌 익절 수익율(계좌 목표이익에 도달하면 전체 매도 후 프로그램 종료)
+    #계좌 손절 수익율(계좌 목표손해에 도달하면 전체 매도 후 프로그램 종료)
+    #매수금액비율(지정금액, %지정) 기준으로 매수주문 처리함
 
 #손익설정
     #손실율(%) 손절(추매 설정시 N회 설정에 따른 이전 보유량의 x%만큼 주식 추가 매수)
@@ -138,11 +138,12 @@ class ModalSetting(QtWidgets.QDialog, uic.loadUiType(resource_path("modules/sett
             self.settings.setValue("lastRunDate", self.lastRunDate);
             self.orderList = set([]);
             self.settings.setValue("orderList", self.orderList);
-            for key in self.myStrategy:
-                self.myStrategy[key]["tsActive"   ] = False;
-                self.myStrategy[key]["tsHighPrice"] = 0;
-                self.myStrategy[key]["tsDivSell"  ] = 0;
-            self.settings.setValue("myStrategy", self.myStrategy);
+            #for key in self.myStrategy:
+            #    self.myStrategy[key]["tsActive"   ] = False;
+            #    self.myStrategy[key]["tsHighPrice"] = 0;
+            #    self.myStrategy[key]["tsDivSell"  ] = 0;
+            #self.settings.setValue("myStrategy", self.myStrategy);
+
         
         self.vAccountPlusEnd.setEnabled(self.vAccountPlusEndActive.isChecked());
         self.vAccountMinusEnd.setEnabled(self.vAccountMinusEndActive.isChecked());

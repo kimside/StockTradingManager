@@ -269,6 +269,9 @@
                <layout class="QGridLayout" name="gridLayout_7">
                 <item row="0" column="0">
                  <widget class="QTableWidgetMyStocks" name="twMyStocks">
+                  <property name="styleSheet">
+                   <string notr="true"/>
+                  </property>
                   <property name="sizeAdjustPolicy">
                    <enum>QAbstractScrollArea::AdjustIgnored</enum>
                   </property>

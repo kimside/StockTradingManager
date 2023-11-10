@@ -188,13 +188,13 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
         self.lProcCnt.setFixedWidth(105);
         self.lProcCnt.setAlignment(QtCore.Qt.AlignVCenter | QtCore.Qt.AlignRight);
         self.vProcMax = QtWidgets.QLabel("0");
-        self.vProcMax.setFixedWidth(20);
+        self.vProcMax.setFixedWidth(30);
         self.vProcMax.setAlignment(QtCore.Qt.AlignVCenter | QtCore.Qt.AlignRight);
         self.lProcDiv = QtWidgets.QLabel("/");
         self.lProcDiv.setFixedWidth(5);
         self.lProcDiv.setAlignment(QtCore.Qt.AlignVCenter | QtCore.Qt.AlignCenter);
         self.vProcCnt = QtWidgets.QLabel("0");
-        self.vProcCnt.setFixedWidth(20);
+        self.vProcCnt.setFixedWidth(30);
         self.vProcCnt.setAlignment(QtCore.Qt.AlignVCenter | QtCore.Qt.AlignRight);
         self.lProcMargin = QtWidgets.QLabel(" ");
         self.lProcMargin.setFixedWidth(5);
@@ -236,6 +236,7 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
         cur = int(self.vProcCnt.text());
 
         if max < cur:
+            self.vProcMax.setToolTip(str(datetime.datetime.now()));
             max = cur;
         
         self.vProcMax.setText(str(max));
@@ -444,6 +445,13 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
                     "vTodayNowAmount" : 0,
                 };
 
+                indexResult = self.reqCommKwRqData({
+                    "codeList": "001;101",
+                    "codeCnt" : 2,
+                    "sRQName" : "Kospi, Kosdaq 지수조회",
+                    "sScrNo"  : "4000",
+                    "output"  : Optkwfid(),
+                });
                 #테스트를 위한 로그기록
                 #testLogFile(opt10075);
                 #testLogFile(opt10077);
@@ -482,6 +490,7 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
                 #내 계좌정보 실시간 조회 등록
                 sCodeList = ";".join(list(s[-6:] for s in accountInfo.__getitem__("mField01")));
                 self.setRealReg("4000", sCodeList);
+                #self.setRealReg("4000", "001;101");#코스피 종합(001), 코스닥 종합(101) 지수 정보 실시간 수신(10초마다 갱신)
                 
                 #체결잔고에서 매도, 매수, 매수취소, 매도취소 접수 항목중 
                 dt = datetime.datetime.now();
@@ -557,6 +566,20 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
                             "tsAddBuy"    : 0,
                             "slAddBuy"    : 0,
                         };
+                for idx in indexResult:
+                    indexValue = float(idx["sField03"]);
+                    if idx["sField01"] == "001":#업종(001:코스피, 101:코스닥)
+                        indexColor = "color:blue;" if indexValue < 0 else "color:red";
+                        self.gbMyAccount.vKospi.setStyleSheet(indexColor);
+                        self.gbMyAccount.vKospi.setText("{0:,.2f}".format(abs(indexValue)));
+                        self.gbMyAccount.vKospiRate.setStyleSheet(indexColor);
+                        self.gbMyAccount.vKospiRate.setText("{0:+.2f}".format(float(idx["sField07"])));
+                    else:
+                        indexColor = "color:blue;" if indexValue < 0 else "color:red";
+                        self.gbMyAccount.vKosdaq.setStyleSheet(indexColor);
+                        self.gbMyAccount.vKosdaq.setText("{0:,.2f}".format(abs(indexValue)));
+                        self.gbMyAccount.vKosdaqRate.setStyleSheet(indexColor);
+                        self.gbMyAccount.vKosdaqRate.setText("{0:+.2f}".format(float(idx["sField07"])));
             else:
                 if type(accountInfo) == int:
                     QtWidgets.QMessageBox.warning(self, "경고", self.getErrMsg(-10003 if accountInfo == -202 else accountInfo));
@@ -617,6 +640,25 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
                 self.myStrategy.buyStrategy(obj);
                 self.myStrategy.sellStrategy(obj);
         
+        elif obj["sRealType"] == "업종지수":
+            #obj["stockCode"];#업종(001:코스피, 101:코스닥)
+            #obj["f17"];#업종 지수값
+            #obj["f11"];#업종 등락값
+            #obj["f12"];#업종 등락비율
+            indexValue = float(obj["f17"]);
+            if obj["stockCode"] == "001":#업종(001:코스피, 101:코스닥)
+                indexColor = "color:blue;" if indexValue < 0 else "color:red";
+                self.gbMyAccount.vKospi.setStyleSheet(indexColor);
+                self.gbMyAccount.vKospi.setText("{0:,.2f}".format(abs(indexValue)));
+                self.gbMyAccount.vKospiRate.setStyleSheet(indexColor);
+                self.gbMyAccount.vKospiRate.setText("{0:+.2f}".format(float(obj["f12"])));
+            else:
+                indexColor = "color:blue;" if indexValue < 0 else "color:red";
+                self.gbMyAccount.vKosdaq.setStyleSheet(indexColor);
+                self.gbMyAccount.vKosdaq.setText("{0:,.2f}".format(abs(indexValue)));
+                self.gbMyAccount.vKosdaqRate.setStyleSheet(indexColor);
+                self.gbMyAccount.vKosdaqRate.setText("{0:+.2f}".format(float(obj["f12"])));
+
         elif obj["sRealType"] == "장시작시간":
             #f215( 8, 9 같은 경우 시간이 888888, 999999 이런식으로 오기도 한다.. datetime못쓰것네.. )
             f215 = {
@@ -801,43 +843,32 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
                             chejan["oriOrderNo"],
                         ),
                     });
-                elif chejan["hogaGb"] == "+매수":
-                    self.addConsoleSlot({
-                        "sRQName": orderScrNoName,
-                        "sTrCode": "",
-                        "sScrNo" : chejan["screenNo"],
-                        "sMsg"   : "{0}({1}) '{2}' 주문이 접수되었습니다.(주문번호:{3})".format(
-                            chejan["stockName" ],
-                            chejan["stockCode" ],
-                            orderScrNoName,
-                            chejan["oriOrderNo"],
-                        ),
-                    });
-                elif chejan["hogaGb"] == "-매도":
-                    self.addConsoleSlot({
-                        "sRQName": orderScrNoName,
-                        "sTrCode": "",
-                        "sScrNo" : chejan["screenNo"],
-                        "sMsg"   : "{0}({1}) '{2}' 주문이 접수되었습니다.(주문번호:{3})".format(
-                            chejan["stockName" ],
-                            chejan["stockCode" ],
-                            orderScrNoName,
-                            chejan["oriOrderNo"],
-                        ),
-                    });
+                elif chejan["hogaGb"] in ["+매수", "-매도"]:
+                    if not chejan["orderNo"] in self.twChejanHisStocks.getColumnDatas("oriOrderNo"):
+                        self.addConsoleSlot({
+                            "sRQName": orderScrNoName,
+                            "sTrCode": "",
+                            "sScrNo" : chejan["screenNo"],
+                            "sMsg"   : "{0}({1}) '{2}' 주문이 접수되었습니다.(주문번호:{3})".format(
+                                chejan["stockName" ],
+                                chejan["stockCode" ],
+                                orderScrNoName,
+                                chejan["oriOrderNo"],
+                            ),
+                        });
             elif chejan["orderStatus"] == "체결":
-                tradeStock = self.calcStock({
-                    "stockCode"     : chejan["stockCode" ],
-                    "stockName"     : chejan["stockName" ],
-                    "averagePrice"  : chejan["unitPrice" ] if chejan["unitPrice"] != "" else chejan["nowPrice"  ],
-                    "nowPrice"      : chejan["unitPrice" ] if chejan["unitPrice"] != "" else chejan["nowPrice"  ],
-                    "stockCount"    : chejan["unitCount" ] if chejan["unitCount"] != "" else chejan["orderCount"],
-                    "reminingCount" : chejan["orderCount"],
-                });
-
                 accountInfo = self.gbMyAccount.getAccountInfo();
 
                 if chejan["hogaGb"] == "+매수":#매수(체결)가 이상없이 체결되었다면 매수가능금액(-) 업데이트
+                    tradeStock = self.calcStock({
+                        "stockCode"     : chejan["stockCode" ],
+                        "stockName"     : chejan["stockName" ],
+                        "averagePrice"  : chejan["unitPrice" ] if chejan["unitPrice"] != "" else chejan["nowPrice"  ],
+                        "nowPrice"      : chejan["unitPrice" ] if chejan["unitPrice"] != "" else chejan["nowPrice"  ],
+                        "stockCount"    : chejan["unitCount" ] if chejan["unitCount"] != "" else chejan["orderCount"],
+                        "reminingCount" : chejan["orderCount"],
+                    });
+
                     self.gbMyAccount.setAccountInfo({
                         "vOrderableAmount": accountInfo["vOrderableAmount"] - tradeStock["buyAmount"],#매수수수료를 더한 매수금액을 매수가능금액에서 차감
                     });
@@ -859,14 +890,23 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
                         ),
                     });
                 elif chejan["hogaGb"] == "-매도":
-                    self.gbMyAccount.setAccountInfo({
-                        "vTodayBuyAmount" : accountInfo["vTodayBuyAmount" ] + tradeStock["buyAmount"],#매도가 발생할경우에만 당일수익율을 계산한다.
-                        "vTodayNowAmount" : accountInfo["vTodayNowAmount" ] + tradeStock["nowAmount"],#매도가 발생할경우에만 당일수익율을 계산한다.
-                        "vOrderableAmount": accountInfo["vOrderableAmount"] + tradeStock["nowAmount"],#매도수수료, 세금을 제한 금액을 매수가능금액에서 증감
-                    });
-
                     myStocks = self.twMyStocks.getRowDatas(chejan["stockCode"]);
                     for myStock in myStocks:
+                        tradeStock = self.calcStock({
+                            "stockCode"    :  chejan["stockCode"   ],
+                            "stockName"    :  chejan["stockName"   ],
+                            "averagePrice" : myStock["averagePrice"],
+                            "nowPrice"     :  chejan["unitPrice"   ] if chejan["unitPrice"] != "" else chejan["nowPrice"  ],
+                            "stockCount"   :  chejan["unitCount"   ] if chejan["unitCount"] != "" else chejan["orderCount"],
+                            "reminingCount":  chejan["orderCount"  ],
+                        });
+
+                        self.gbMyAccount.setAccountInfo({
+                            "vTodayBuyAmount" : accountInfo["vTodayBuyAmount" ] + tradeStock["buyAmount"],#매도가 발생할경우에만 당일수익율을 계산한다.
+                            "vTodayNowAmount" : accountInfo["vTodayNowAmount" ] + tradeStock["nowAmount"],#매도가 발생할경우에만 당일수익율을 계산한다.
+                            "vOrderableAmount": accountInfo["vOrderableAmount"] + tradeStock["nowAmount"],#매도수수료, 세금을 제한 금액을 매수가능금액에서 증감
+                        });
+
                         if chejan["missCount"] != "0":
                             #미체결수량이 있다면
                             myStock["stockCount"] = myStock["stockCount"] - int(chejan["unitCount"]);#현재수량 - 단위체결량
@@ -1113,7 +1153,7 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
             obj["sScrNo"] = "0000";
         
         if obj.get("sRQName", "") == "":
-            obj["sRQName"] = "기타";
+            obj["sRQName"] = "시스템";
         
         msg = ["[{0}]: " .format(datetime.datetime.now())];
         msg.append("{0}, ".format(self.preFormat(obj["sRQName"] if obj["sRQName"] != "" else obj["sTrCode"], 32, "<")));
@@ -1147,6 +1187,14 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
         self.twMyStocks.setRowCount(0);
         self.twChejanStocks.setRowCount(0);
         self.twChejanHisStocks.setRowCount(0);
+        self.gbMyAccount.vKospi.setStyleSheet("");
+        self.gbMyAccount.vKospi.setText("0.00");
+        self.gbMyAccount.vKospiRate.setStyleSheet("");
+        self.gbMyAccount.vKospiRate.setText("0.00");
+        self.gbMyAccount.vKosdaq.setStyleSheet("");
+        self.gbMyAccount.vKosdaq.setText("0.00");
+        self.gbMyAccount.vKosdaqRate.setStyleSheet("");
+        self.gbMyAccount.vKosdaqRate.setText("0.00");
     
     #QWidget 기본 함수(Window창의 [X]버튼을 클릭하여 창이 닫히는 경우)
     def closeEvent(self, event):

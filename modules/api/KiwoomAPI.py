@@ -244,7 +244,7 @@ class KiwoomAPI(LogMaker, metaclass=Singleton):
                 
                 self.apiMsgSignal.emit({
                     "sScrNo" : sScrNo,
-                    "sRQName": "시스템",
+                    "sRQName": sRQName,
                     "sTrCode": "",
                     "sMsg"   : ("{0} 종목정보 검색을 처리하였습니다.").format("다건(Multiple)" if self.receiveTrDataMulti == True else "단건(Single)"),
                 });
@@ -402,7 +402,7 @@ class KiwoomAPI(LogMaker, metaclass=Singleton):
     def reqCommKwRqData(self, reqParams):
         codeList = reqParams["codeList"];
         codeCnt  = reqParams["codeCnt"];
-        sRQName  = reqParams["sRQName"];
+        sRQName  = reqParams.get("sRQName", "시스템");
         sScrNo   = reqParams["sScrNo"];
         output   = reqParams["output"];
         
@@ -414,7 +414,7 @@ class KiwoomAPI(LogMaker, metaclass=Singleton):
         
         self.apiMsgSignal.emit({
             "sScrNo" : sScrNo,
-            "sRQName": "시스템",
+            "sRQName": sRQName,
             "sTrCode": "",
             "sMsg"   : ("다건(Multiple) {0}건의 종목정보 검색을 요청하였습니다").format(len(codeList.split(";"))),
         });
@@ -550,6 +550,21 @@ class KiwoomAPI(LogMaker, metaclass=Singleton):
             obj["f20"  ] = self.api.dynamicCall("GetCommRealData(QString, int)", sCode,  20); #체결시간
             obj["f214" ] = self.api.dynamicCall("GetCommRealData(QString, int)", sCode, 214); #장시작예상잔여시간
         
+        elif sRealType == "업종지수":
+            obj["rType"] = "10";
+            obj["f20"  ] = self.api.dynamicCall("GetCommRealData(QString, int)", sCode, 20); #체결시간
+            obj["f10"  ] = self.api.dynamicCall("GetCommRealData(QString, int)", sCode, 10); #현재가
+            obj["f11"  ] = self.api.dynamicCall("GetCommRealData(QString, int)", sCode, 11); #전일대비
+            obj["f12"  ] = self.api.dynamicCall("GetCommRealData(QString, int)", sCode, 12); #등락율
+            obj["f15"  ] = self.api.dynamicCall("GetCommRealData(QString, int)", sCode, 15); #거래량(+는 매수체결, -는 매도체결)
+            obj["f13"  ] = self.api.dynamicCall("GetCommRealData(QString, int)", sCode, 13); #누적거래량
+            obj["f14"  ] = self.api.dynamicCall("GetCommRealData(QString, int)", sCode, 14); #누적거래대금
+            obj["f16"  ] = self.api.dynamicCall("GetCommRealData(QString, int)", sCode, 16); #시가
+            obj["f17"  ] = self.api.dynamicCall("GetCommRealData(QString, int)", sCode, 17); #고가
+            obj["f18"  ] = self.api.dynamicCall("GetCommRealData(QString, int)", sCode, 18); #저가
+            obj["f25"  ] = self.api.dynamicCall("GetCommRealData(QString, int)", sCode, 25); #전일대비기호
+            obj["f26"  ] = self.api.dynamicCall("GetCommRealData(QString, int)", sCode, 26); #전일거래량대비(계약,주)
+
         """
         elif sRealType == "주식우선호가":
             obj["rType"] = "03";
@@ -963,7 +978,7 @@ class KiwoomAPI(LogMaker, metaclass=Singleton):
         
         #주식우선호가(매수/매도 1호가 가격이 변경되면 전달) 데이터가 너무 많이 온다.. 화면 버벅임..
         #사용하지 않는 실시간 데이터는 로그로 저장하지 않는다(부하가 많을때 처리량이 밀림)
-        if sRealType in ["주식체결", "장시작시간"]:
+        if sRealType in ["주식체결", "장시작시간", "업종지수"]:
             self.stockSignal.emit(obj);
             #틱 거래정보 로그를 남길 필요가 있을까??
             #self.writeLog("real", obj);
@@ -982,7 +997,7 @@ class KiwoomAPI(LogMaker, metaclass=Singleton):
         #RC4033: 모의투자 정정/취소할 수량이 없습니다.
         msgCode = "100000" if "100000" in sMsg else sMsg[1:7];
 
-        if msgCode != "100000":
+        if msgCode != "100000" and sMsg != "조회가 완료되었습니다.":
             self.apiMsgSignal.emit({
                 "sScrNo" : sScrNo,
                 "sRQName": sRQName,

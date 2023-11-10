@@ -112,25 +112,25 @@ class ModalInformation(QtWidgets.QDialog, uic.loadUiType(resource_path("modules/
             self.twMyStrategyStocks.addRows(myStrategy);
 
         if currentTab == 0:
-            self.twMyStrategyStocks.setColumnHidden(self.twMyStrategyStocks.getColumnIdx("tsActive"), False);
-            self.twMyStrategyStocks.setColumnHidden(self.twMyStrategyStocks.getColumnIdx("tsHighPrice"), False);
-            self.twMyStrategyStocks.setColumnHidden(self.twMyStrategyStocks.getColumnIdx("tsServePrice"), False);
-            self.twMyStrategyStocks.setColumnHidden(self.twMyStrategyStocks.getColumnIdx("tsDivSell"), False);
+            self.twMyStrategyStocks.setColumnHidden(self.twMyStrategyStocks.getColumnIdx("tsActive"      ), False);
+            self.twMyStrategyStocks.setColumnHidden(self.twMyStrategyStocks.getColumnIdx("tsHighPrice"   ), False);
+            self.twMyStrategyStocks.setColumnHidden(self.twMyStrategyStocks.getColumnIdx("tsServePrice"  ), False);
+            self.twMyStrategyStocks.setColumnHidden(self.twMyStrategyStocks.getColumnIdx("tsDivSell"     ), False);
             self.twMyStrategyStocks.setColumnHidden(self.twMyStrategyStocks.getColumnIdx("tsDivSellPrice"), False);
-            self.twMyStrategyStocks.setColumnHidden(self.twMyStrategyStocks.getColumnIdx("tsAddBuy"), False);
-            self.twMyStrategyStocks.setColumnHidden(self.twMyStrategyStocks.getColumnIdx("tsAddBuyPrice"), False);
-            self.twMyStrategyStocks.setColumnHidden(self.twMyStrategyStocks.getColumnIdx("slAddBuy"), True);
-            self.twMyStrategyStocks.setColumnHidden(self.twMyStrategyStocks.getColumnIdx("slAddBuyPrice"), True);
+            self.twMyStrategyStocks.setColumnHidden(self.twMyStrategyStocks.getColumnIdx("tsAddBuy"      ), False);
+            self.twMyStrategyStocks.setColumnHidden(self.twMyStrategyStocks.getColumnIdx("tsAddBuyPrice" ), False);
+            self.twMyStrategyStocks.setColumnHidden(self.twMyStrategyStocks.getColumnIdx("slAddBuy"      ),  True);
+            self.twMyStrategyStocks.setColumnHidden(self.twMyStrategyStocks.getColumnIdx("slAddBuyPrice" ),  True);
         else:
-            self.twMyStrategyStocks.setColumnHidden(self.twMyStrategyStocks.getColumnIdx("tsActive"), True);
-            self.twMyStrategyStocks.setColumnHidden(self.twMyStrategyStocks.getColumnIdx("tsHighPrice"), True);
-            self.twMyStrategyStocks.setColumnHidden(self.twMyStrategyStocks.getColumnIdx("tsServePrice"), True);
-            self.twMyStrategyStocks.setColumnHidden(self.twMyStrategyStocks.getColumnIdx("tsDivSell"), True);
-            self.twMyStrategyStocks.setColumnHidden(self.twMyStrategyStocks.getColumnIdx("tsDivSellPrice"), True);
-            self.twMyStrategyStocks.setColumnHidden(self.twMyStrategyStocks.getColumnIdx("tsAddBuy"), True);
-            self.twMyStrategyStocks.setColumnHidden(self.twMyStrategyStocks.getColumnIdx("tsAddBuyPrice"), True);
-            self.twMyStrategyStocks.setColumnHidden(self.twMyStrategyStocks.getColumnIdx("slAddBuy"), False);
-            self.twMyStrategyStocks.setColumnHidden(self.twMyStrategyStocks.getColumnIdx("slAddBuyPrice"), False);
+            self.twMyStrategyStocks.setColumnHidden(self.twMyStrategyStocks.getColumnIdx("tsActive"      ),  True);
+            self.twMyStrategyStocks.setColumnHidden(self.twMyStrategyStocks.getColumnIdx("tsHighPrice"   ),  True);
+            self.twMyStrategyStocks.setColumnHidden(self.twMyStrategyStocks.getColumnIdx("tsServePrice"  ),  True);
+            self.twMyStrategyStocks.setColumnHidden(self.twMyStrategyStocks.getColumnIdx("tsDivSell"     ),  True);
+            self.twMyStrategyStocks.setColumnHidden(self.twMyStrategyStocks.getColumnIdx("tsDivSellPrice"),  True);
+            self.twMyStrategyStocks.setColumnHidden(self.twMyStrategyStocks.getColumnIdx("tsAddBuy"      ),  True);
+            self.twMyStrategyStocks.setColumnHidden(self.twMyStrategyStocks.getColumnIdx("tsAddBuyPrice" ),  True);
+            self.twMyStrategyStocks.setColumnHidden(self.twMyStrategyStocks.getColumnIdx("slAddBuy"      ), False);
+            self.twMyStrategyStocks.setColumnHidden(self.twMyStrategyStocks.getColumnIdx("slAddBuyPrice" ), False);
 
         #self.resizeEvent();
     
