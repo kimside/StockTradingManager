@@ -565,6 +565,22 @@ class KiwoomAPI(LogMaker, metaclass=Singleton):
             obj["f25"  ] = self.api.dynamicCall("GetCommRealData(QString, int)", sCode, 25); #전일대비기호
             obj["f26"  ] = self.api.dynamicCall("GetCommRealData(QString, int)", sCode, 26); #전일거래량대비(계약,주)
 
+        elif sRealType =="업종등락":
+            obj["rType"] = "11";
+            obj["f20"  ] = self.api.dynamicCall("GetCommRealData(QString, int)", sCode,  20); #체결시간
+            obj["f252" ] = self.api.dynamicCall("GetCommRealData(QString, int)", sCode, 252); #상승종목수
+            obj["f251" ] = self.api.dynamicCall("GetCommRealData(QString, int)", sCode, 251); #상한종목수
+            obj["f253" ] = self.api.dynamicCall("GetCommRealData(QString, int)", sCode, 253); #보합종목수
+            obj["f255" ] = self.api.dynamicCall("GetCommRealData(QString, int)", sCode, 255); #하락종목수
+            obj["f254" ] = self.api.dynamicCall("GetCommRealData(QString, int)", sCode, 254); #하한종목수
+            obj["f13"  ] = self.api.dynamicCall("GetCommRealData(QString, int)", sCode,  13); #누적거래량
+            obj["f14"  ] = self.api.dynamicCall("GetCommRealData(QString, int)", sCode,  14); #누적거래대금
+            obj["f10"  ] = self.api.dynamicCall("GetCommRealData(QString, int)", sCode,  10); #현재가
+            obj["f11"  ] = self.api.dynamicCall("GetCommRealData(QString, int)", sCode,  11); #전일대비
+            obj["f12"  ] = self.api.dynamicCall("GetCommRealData(QString, int)", sCode,  12); #등락율
+            obj["f256" ] = self.api.dynamicCall("GetCommRealData(QString, int)", sCode, 256); #거래형성종목수
+            obj["f257" ] = self.api.dynamicCall("GetCommRealData(QString, int)", sCode, 257); #거래형성비율
+            obj["f25"  ] = self.api.dynamicCall("GetCommRealData(QString, int)", sCode,  25); #전일대비기호
         """
         elif sRealType == "주식우선호가":
             obj["rType"] = "03";
@@ -766,38 +782,6 @@ class KiwoomAPI(LogMaker, metaclass=Singleton):
             obj["f382" ] = self.api.dynamicCall("GetCommRealData(QString, int)", sCode, 382); #증거금율표시
             obj["f370" ] = self.api.dynamicCall("GetCommRealData(QString, int)", sCode, 370); #종목정보
             obj["f300" ] = self.api.dynamicCall("GetCommRealData(QString, int)", sCode, 300); #Extra Item
-        
-        elif sRealType == "업종지수":
-            obj["rType"] = "10";
-            obj["f20"  ] = self.api.dynamicCall("GetCommRealData(QString, int)", sCode, 20); #체결시간
-            obj["f10"  ] = self.api.dynamicCall("GetCommRealData(QString, int)", sCode, 10); #현재가
-            obj["f11"  ] = self.api.dynamicCall("GetCommRealData(QString, int)", sCode, 11); #전일대비
-            obj["f12"  ] = self.api.dynamicCall("GetCommRealData(QString, int)", sCode, 12); #등락율
-            obj["f15"  ] = self.api.dynamicCall("GetCommRealData(QString, int)", sCode, 15); #거래량(+는 매수체결, -는 매도체결)
-            obj["f13"  ] = self.api.dynamicCall("GetCommRealData(QString, int)", sCode, 13); #누적거래량
-            obj["f14"  ] = self.api.dynamicCall("GetCommRealData(QString, int)", sCode, 14); #누적거래대금
-            obj["f16"  ] = self.api.dynamicCall("GetCommRealData(QString, int)", sCode, 16); #시가
-            obj["f17"  ] = self.api.dynamicCall("GetCommRealData(QString, int)", sCode, 17); #고가
-            obj["f18"  ] = self.api.dynamicCall("GetCommRealData(QString, int)", sCode, 18); #저가
-            obj["f25"  ] = self.api.dynamicCall("GetCommRealData(QString, int)", sCode, 25); #전일대비기호
-            obj["f26"  ] = self.api.dynamicCall("GetCommRealData(QString, int)", sCode, 26); #전일거래량대비(계약,주)
-        
-        elif sRealType =="업종등락":
-            obj["rType"] = "11";
-            obj["f20"  ] = self.api.dynamicCall("GetCommRealData(QString, int)", sCode,  20); #체결시간
-            obj["f252" ] = self.api.dynamicCall("GetCommRealData(QString, int)", sCode, 252); #상승종목수
-            obj["f251" ] = self.api.dynamicCall("GetCommRealData(QString, int)", sCode, 251); #상한종목수
-            obj["f253" ] = self.api.dynamicCall("GetCommRealData(QString, int)", sCode, 253); #보합종목수
-            obj["f255" ] = self.api.dynamicCall("GetCommRealData(QString, int)", sCode, 255); #하락종목수
-            obj["f254" ] = self.api.dynamicCall("GetCommRealData(QString, int)", sCode, 254); #하한종목수
-            obj["f13"  ] = self.api.dynamicCall("GetCommRealData(QString, int)", sCode,  13); #누적거래량
-            obj["f14"  ] = self.api.dynamicCall("GetCommRealData(QString, int)", sCode,  14); #누적거래대금
-            obj["f10"  ] = self.api.dynamicCall("GetCommRealData(QString, int)", sCode,  10); #현재가
-            obj["f11"  ] = self.api.dynamicCall("GetCommRealData(QString, int)", sCode,  11); #전일대비
-            obj["f12"  ] = self.api.dynamicCall("GetCommRealData(QString, int)", sCode,  12); #등락율
-            obj["f256" ] = self.api.dynamicCall("GetCommRealData(QString, int)", sCode, 256); #거래형성종목수
-            obj["f257" ] = self.api.dynamicCall("GetCommRealData(QString, int)", sCode, 257); #거래형성비율
-            obj["f25"  ] = self.api.dynamicCall("GetCommRealData(QString, int)", sCode,  25); #전일대비기호
         
         elif sRealType == "VI발동/해제":
             obj["rType"] = "12";

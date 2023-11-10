@@ -172,18 +172,6 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
         if self.kwargs.get("mode", "stage") == "debug":
             self.myThread.start();
 
-        self.shutdownTimer = QtCore.QTimer();
-        self.shutdownTimer.setInterval(1000);
-        self.shutdownTimer.timeout.connect(self.shutdown);
-        self.shutdownTimer.start();
-
-        #초당처리건수 카운터
-        self.procCnt = 0;
-        self.processCounter = QtCore.QTimer();
-        self.processCounter.setInterval(1000);
-        self.processCounter.timeout.connect(self.clearProcCnt);
-        self.processCounter.start();
-
         self.lProcCnt = QtWidgets.QLabel("TPS(Max/Now):");
         self.lProcCnt.setFixedWidth(105);
         self.lProcCnt.setAlignment(QtCore.Qt.AlignVCenter | QtCore.Qt.AlignRight);
@@ -208,6 +196,19 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
         
         if self.appSettings.vAutoLogin:
             self.actLoginSlot();
+
+        #장거래시간 이외 자동 종료 타이머
+        self.shutdownTimer = QtCore.QTimer();
+        self.shutdownTimer.setInterval(1000);
+        self.shutdownTimer.timeout.connect(self.shutdown);
+        self.shutdownTimer.start();
+
+        #초당처리건수 카운터 타이머
+        self.procCnt = 0;
+        self.processCounter = QtCore.QTimer();
+        self.processCounter.setInterval(1000);
+        self.processCounter.timeout.connect(self.clearProcCnt);
+        self.processCounter.start();
     
     #텔레그램 메세지 발송
     async def sendMessage(self, telegramMsg): #실행시킬 함수명 임의지정
@@ -365,6 +366,8 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
             
             if self.kwargs.get("accountNo", "") != "" and self.kwargs.get("condition", "") != "":
                 self.btnRunSlot();
+                #self.shutdownTimer.start();
+                #self.processCounter.start();
         
         else:
             self.cbConUp.clear();
@@ -380,7 +383,7 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
     def accountChangedSlot(self, accountNo):
         self.gbMyAccount.clear("account");
         self.tableWidgetClear();
-        
+
         if accountNo != "":
             accountInfo = self.reqCommRqData({
                 "sRQName": "계좌평가현황요청",
