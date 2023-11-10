@@ -143,23 +143,29 @@ class KiwoomAPI(LogMaker, metaclass=Singleton):
                 self.buyTaxRate  = 0.00015;
                 self.setlTaxRate = 0.00015;
 
-            msg = "로그인처리 성공...";
+            self.apiMsgSignal.emit({
+                "sScrNo" : "9999",
+                "sRQName": "시스템",
+                "sTrCode": "",
+                "sMsg"   : "로그인처리 성공...",
+            });
+                
             self.loginSignal.emit(self.isLogin);
         else:
             self.isLogin = False;
-            msg = "로그인처리 실패...(errCode: {0})".format(errCode);
+            self.apiMsgSignal.emit({
+                "sScrNo" : "9999",
+                "sRQName": "시스템",
+                "sTrCode": "",
+                "sMsg"   : "로그인처리 실패...(errCode: {0})".format(errCode),
+            });
+            
             self.loginSignal.emit(self.isLogin);
-        
-        self.apiMsgSignal.emit({
-            "sScrNo" : "9999",
-            "sRQName": "시스템",
-            "sTrCode": "",
-            "sMsg"   : msg,
-        });
-        
+
         if self.onEventConnectLoop.isRunning():
             self.onEventConnectLoop.exit();
-
+        
+        
     ##사용자 기본정보 가져오기
     def getUserInfo(self):
         if not self.isConnected():

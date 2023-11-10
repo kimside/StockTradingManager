@@ -235,10 +235,14 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
     def clearProcCnt(self):
         max = int(self.vProcMax.text());
         cur = int(self.vProcCnt.text());
-
+        
         if max < cur:
             self.vProcMax.setToolTip(str(datetime.datetime.now()));
             max = cur;
+            dt       = datetime.datetime.now();
+            yyyymmdd = "{0}{1:02d}{2:02d}".format(dt.year, dt.month, dt.day);
+            with open("logging/{0}/{1}.log".format(yyyymmdd, "tpsHistory"), "a", encoding="UTF-8", ) as fileData:
+                fileData.write("[{0}] TPS MAX: {1}\n".format(datetime.datetime.now(), max));
         
         self.vProcMax.setText(str(max));
         self.vProcCnt.setText(str(0));
@@ -330,7 +334,6 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
     #로그인 변경 이벤트 슬롯
     def isLoginSlot(self, isLogin):
         self.isLogin = isLogin;
-        
         self.actLogin.setText("Logout" if self.isLogin else "Login");
         self.actLogin.setShortcut("Ctrl+L");
         self.actLogin.setEnabled(False if self.isLogin else True);
@@ -365,10 +368,8 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
                         break;
             
             if self.kwargs.get("accountNo", "") != "" and self.kwargs.get("condition", "") != "":
+                time.sleep(0.5);#배치로 실행시 초기화를 위한 데이터 조회량이 많아 요청제한에 걸릴수 있어 0.5초 이후 실행함
                 self.btnRunSlot();
-                #self.shutdownTimer.start();
-                #self.processCounter.start();
-        
         else:
             self.cbConUp.clear();
             self.cbConUp.addItem("--조건식을 선택해주세요--", "");
