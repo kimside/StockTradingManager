@@ -18,6 +18,7 @@ class LogMaker:
         };
         
         self.fidList = {
+            "result"   : {"size":  5, "align": ">", "desc": "전송결과"},
             "reason"   : {"size": 30, "align": "<", "desc": "사유"},
             "stockCode": {"size":  6, "align":  "", "desc": "종목코드"},
             "conId"    : {"size":  3, "align": "<", "desc": "조건검색ID"},

@@ -166,6 +166,8 @@ class MyStrategy(AbstractStrategy):
                              orderCount;
                 if orderCount > 0:
                     myStrategy["tsDivSell"] += 1;
+                    #수익달성시 재매수 금지목록에 추가한다
+                    self.appSettings.orderList.add((obj["f9001"], obj["f302"]));
                     result = self.sendOrder({
                         "sScrNo"    : "3012",
                         "nOrderType": 2,
@@ -189,6 +191,8 @@ class MyStrategy(AbstractStrategy):
                 
                 if orderCount > 0:
                     myStrategy["tsDivSell"] += 1;
+                    #수익달성시 재매수 금지목록에 추가한다
+                    self.appSettings.orderList.add((obj["f9001"], obj["f302"]));
                     result = self.sendOrder({
                         "sScrNo"    : "3012",
                         "nOrderType": 2,
@@ -201,10 +205,12 @@ class MyStrategy(AbstractStrategy):
                     if result != 0:
                         myStrategy["tsDivSell"] -= 1;
 
-            elif nowPrice < myStrategy["averagePrice"] + (myStrategy["tsHighPrice"] - myStrategy["averagePrice"]) * self.tsServeRate / 100:
+            elif nowPrice > myStrategy["averagePrice"] and nowPrice < myStrategy["averagePrice"] + (myStrategy["tsHighPrice"] - myStrategy["averagePrice"]) * self.tsServeRate / 100:
                 #고점대비 현재가가 수익보존율 보다 낮다면 매도
                 if myStock["reminingCount"] > 0:
                     myStrategy["tsDivSell"] += 1;
+                    #수익달성시 재매수 금지목록에 추가한다
+                    self.appSettings.orderList.add((obj["f9001"], obj["f302"]));
                     result = self.sendOrder({
                         "sScrNo"    : "3013",
                         "nOrderType": 2,
@@ -219,7 +225,7 @@ class MyStrategy(AbstractStrategy):
 
         else:
             #목표 수익율 미진입(손실율에 도달했다면)
-            if nowPrice < myStrategy["averagePrice"] + int(myStrategy["averagePrice"] * (self.tsLossRate + (self.tsLossRate * myStrategy["tsAddBuy"]) / 100)):
+            if nowPrice < myStrategy["averagePrice"] + int(myStrategy["averagePrice"] * (self.tsLossRate + (self.tsLossRate * myStrategy["tsAddBuy"])) / 100):
                 if self.tsDivBuyActive and self.tsDivBuyCount > myStrategy["tsAddBuy"]:
                     #추가매수(TrailingStop 추가매수 활성화, TrailingStop 추가매수 횟수확인)
                     orderCount = self.getBuyCount(nowPrice);
@@ -268,6 +274,8 @@ class MyStrategy(AbstractStrategy):
         if self.slProfit <= myStock["profitRate"]:
             if myStock["reminingCount"] > 0:
                 myStrategy["slDivSell"] += 1;
+                #수익 달성시 재매수 금지목록에 추가한다.
+                self.appSettings.orderList.add((obj["f9001"], obj["f302"]));
                 result = self.sendOrder({
                     "sScrNo"    : "3022",
                     "nOrderType": 2,
@@ -280,7 +288,7 @@ class MyStrategy(AbstractStrategy):
                 if result != 0:
                     myStrategy["slDivSell"] -= 1;
                 
-        elif nowPrice < myStrategy["averagePrice"] + int(myStrategy["averagePrice"] * (self.slLoss + (self.slLoss * myStrategy["slAddBuy"]) / 100)):
+        elif nowPrice < myStrategy["averagePrice"] + int(myStrategy["averagePrice"] * (self.slLoss + (self.slLoss * myStrategy["slAddBuy"])) / 100):
             if self.slDivBuyActive and self.slDivBuyCount > myStrategy["slAddBuy"]:
                 orderCount = self.getBuyCount(nowPrice);
                 if orderCount > 0:
@@ -349,6 +357,7 @@ class MyStrategy(AbstractStrategy):
 
     #주문신청
     def sendOrder(self, order, stock):
+        result = -1;
         if order["nQty"] > 0:
             if order["nOrderType"] == 2:
                 #매도주문
@@ -399,14 +408,6 @@ class MyStrategy(AbstractStrategy):
                     "reason"     : order["reason"     ],#주문사유
                     "sOrgOrderNo": order["sOrgOrderNo"],#원주문번호
                 });
-            
-            #if result == 0:
-            #    self.parent.addConsoleSlot({
-            #        "sRQName": order["reason"],
-            #        "sTrCode": "",
-            #        "sScrNo" : order["sScrNo"],
-            #        "sMsg"   : "{0}({1}) {2}주".format(stock["stockName"], stock["stockCode"], order["nQty"]),
-            #    });
             elif result == -308:
                 time.sleep(0.25);
             

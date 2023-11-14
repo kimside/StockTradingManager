@@ -985,9 +985,15 @@ class KiwoomAPI(LogMaker, metaclass=Singleton):
         #100000: 정상
         #RC4007: 모의투자 매매제한 종목입니다.
         #RC4033: 모의투자 정정/취소할 수량이 없습니다.
-        msgCode = "100000" if "100000" in sMsg else sMsg[1:7];
+        #실전서버
+        #107048: 매도
+        #107055: 매도취소
+        #107066: 매수
+        #107071: 매수취소
+        #506550: 취소가능수량 없음
+        msgCode = "1" if "1" in sMsg[1:2] else sMsg;
 
-        if msgCode != "100000" and sMsg != "조회가 완료되었습니다.":
+        if msgCode != "1" and sMsg != "조회가 완료되었습니다.":
             self.apiMsgSignal.emit({
                 "sScrNo" : sScrNo,
                 "sRQName": sRQName,
@@ -1058,13 +1064,6 @@ class KiwoomAPI(LogMaker, metaclass=Singleton):
         result = self.api.dynamicCall("SendOrder(QString, QString, QString, int, QString, int, int, QString, QString)", [sRQName, sScrNo, sAccNo, nOrderType, sCode, nQty, nPrice, sHogaGb, sOrgOrderNo]);
         
         if result == 0:
-            #self.apiMsgSignal.emit({
-            #    "sScrNo" : sScrNo,
-            #    "sRQName": sRQName,
-            #    "sTrCode": sCode,
-            #    "sMsg"   : "{0}({1})를 {2}({3})주를 {4} 신청하였습니다.(result:{5})".format(masterCodeName, sCode, nPrice, nQty, self.nOrderType[nOrderType], result),
-            #});
-                
             self.writeLog("order", {
                 "f302"  : masterCodeName,
                 "f9001" : sCode,
@@ -1075,17 +1074,10 @@ class KiwoomAPI(LogMaker, metaclass=Singleton):
                 "reason": reason,
             });
         else:
-            #self.apiMsgSignal.emit({
-            #    "sScrNo" : sScrNo,
-            #    "sRQName": sRQName,
-            #    "sTrCode": sCode,
-            #    "sMsg"   : "{0}({1})를 {2}({3})주를 {4} 신청 오류가 발생하였습니다.({5})".format(masterCodeName, sCode, nPrice, nQty, self.nOrderType[nOrderType], self.errCodes[result]),
-            #});
-
             self.writeLog("kiwoom", {
                 "f920"   : sScrNo,
                 "sTrCode": "sendOrder",
-                "msg"    : ("{0}({1})를 {2}({3})주를 {4} 신청 오류가 발생하였습니다.({5})").format(masterCodeName, sCode, nPrice, nQty, self.nOrderType[nOrderType], self.errCodes[result]),
+                "msg"    : ("{0}({1})를 {2}({3})주를 {4} 신청 오류가 발생하였습니다.({5})").format(masterCodeName, sCode, nPrice, nQty, self.nOrderType[nOrderType], result),
             });
 
             result = -1;
