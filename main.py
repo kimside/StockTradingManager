@@ -45,12 +45,12 @@ logger=logging.getLogger(__name__);
     3023: StopLoss(매도) 손실 전량매도,
     3999: 기타주문,
 )
-4000: 내 계좌 실시간 시세요청
-5000: 
-6000:
-7000: 미체결잔고 실시간 시세요청
-8000: 조건검색 실시간 시세요청
-9000: 시스템활용 화면번호
+4000~4009: 내 계좌 실시간 시세요청
+5000~5009: 
+6000~6009:
+7000~7009: 미체결잔고 실시간 시세요청
+8000~8009: 조건검색 실시간 시세요청
+9000~9009: 시스템활용 화면번호
 """
 def resource_path(relative_path):
     try:# PyInstaller creates a temp folder and stores path in _MEIPASS
@@ -494,7 +494,6 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
                 #내 계좌정보 실시간 조회 등록
                 sCodeList = ";".join(list(s[-6:] for s in accountInfo.__getitem__("mField01")));
                 self.setRealReg("4000", sCodeList);
-                #self.setRealReg("4000", "001;101");#코스피 종합(001), 코스닥 종합(101) 지수 정보 실시간 수신(10초마다 갱신)
                 
                 #체결잔고에서 매도, 매수, 매수취소, 매도취소 접수 항목중 
                 dt = datetime.datetime.now();
@@ -601,7 +600,7 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
 
         if obj["sRealType"] in ["주식체결"] :
             #계좌 보유주식 정보 업데이트
-            if "4000" in sScrNoList:
+            if "400" in sScrNoList:
                 for myStock in self.twMyStocks.getRowDatas(obj["f9001"]):
                     myStock["nowPrice"] = obj["f10"];
                     self.twMyStocks.addRows(self.calcStock(myStock));
@@ -609,7 +608,7 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
                 self.updateSummary();
             
             #미체결 잔고 현재가 업데이트
-            if "7000" in sScrNoList:
+            if "700" in sScrNoList:
                 #미체결 대기시간 초과 항목 취소 주문
                 for chejanStock in self.twChejanStocks.getRowDatas():
                     if chejanStock["stockCode"] == obj["f9001"]:
@@ -625,7 +624,7 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
                            self.myStrategy.orderCancel(chejanStock);
             
             #조건검색결과 정보 업데이트
-            if "8000" in sScrNoList:
+            if "800" in sScrNoList:
                 conStock = {
                     "stockCode"    : obj["f9001"],
                     "stockName"    : obj["f302" ],

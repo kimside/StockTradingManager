@@ -305,7 +305,7 @@ class KiwoomAPI(LogMaker, metaclass=Singleton):
     #conName, //조건검색명
     #conId,   //조건아이디
     #nSearch, //실시간옵션. 0:조건검색만, 1:조건검색+실시간 조건검색
-    def sendCondition(self, sScrNo, conName, conId, nSearch=1):
+    def sendCondition(self, sScrNo, conName, conId, nSearch=0):
         result = self.api.dynamicCall("SendCondition(QString, QString, int, int)", sScrNo, conName, conId, nSearch);
         
         if result == 1:

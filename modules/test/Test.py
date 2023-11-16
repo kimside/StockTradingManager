@@ -14,13 +14,5 @@ def writeFile():
     print(f"time elapsed : {int(round((endTime - startTime) * 1000))}ms");
     """
 if __name__ == "__main__":    
-    a = [];
-    a.append("TEST");
-    print("".join(a));
-    #startTime = time.perf_counter();
-    #for i in range(100000):
-    #    v = datetime.datetime.now().strftime("%Y%m%d");
-    #    #d = datetime.datetime.now();
-    #    #v = "{0:02d},{1:02d}".format(d.hour, d.minute);
-    #endTime = time.perf_counter();
-    #print(f"time elapsed : {int(round((endTime - startTime) * 1000))}ms");
+    n ="7000";
+    print("700" in n);
