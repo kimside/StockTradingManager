@@ -593,14 +593,17 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
     
     #실시간 수신 데이터 Grid에 반영
     def stockSignalSlot(self, obj):
+        if "001" in obj["f920"]:
+            print(obj["f920"]);
+        
         self.vProcCnt.setText(str(int(self.vProcCnt.text()) + 1));
         sScrNoList = obj["f920"].split(";") \
                      if "f920" in obj else  \
                      [];
 
-        if obj["sRealType"] in ["주식체결"] :
+        if obj["sRealType"] in ["주식체결"]:
             #계좌 보유주식 정보 업데이트
-            if "400" in sScrNoList:
+            if 0 < len([scrNo for scrNo in sScrNoList if "400" in scrNo]):
                 for myStock in self.twMyStocks.getRowDatas(obj["f9001"]):
                     myStock["nowPrice"] = obj["f10"];
                     self.twMyStocks.addRows(self.calcStock(myStock));
@@ -608,7 +611,7 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
                 self.updateSummary();
             
             #미체결 잔고 현재가 업데이트
-            if "700" in sScrNoList:
+            if 0 < len([scrNo for scrNo in sScrNoList if "700" in scrNo]):
                 #미체결 대기시간 초과 항목 취소 주문
                 for chejanStock in self.twChejanStocks.getRowDatas():
                     if chejanStock["stockCode"] == obj["f9001"]:
@@ -624,7 +627,7 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
                            self.myStrategy.orderCancel(chejanStock);
             
             #조건검색결과 정보 업데이트
-            if "800" in sScrNoList:
+            if 0 < len([scrNo for scrNo in sScrNoList if "800" in scrNo]):
                 conStock = {
                     "stockCode"    : obj["f9001"],
                     "stockName"    : obj["f302" ],

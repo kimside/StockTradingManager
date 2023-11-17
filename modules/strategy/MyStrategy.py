@@ -199,7 +199,7 @@ class MyStrategy(AbstractStrategy):
                         "sCode"     : myStock["stockCode"],
                         "nQty"      : orderCount,
                         "nPrice"    : nowPrice,
-                        "reason"    : "TrailingStop 추가목표가 달성매도({0})".format(myStrategy.get("tsDivSell") + 1 if myStrategy["tsDivSell"] < maxSellCnt else "Last"),
+                        "reason"    : "TrailingStop 추가목표가 달성매도({0})".format(myStrategy.get("tsDivSell") if myStrategy["tsDivSell"] < maxSellCnt else "Last"),
                     }, myStock);
 
                     if result != 0:
@@ -237,7 +237,7 @@ class MyStrategy(AbstractStrategy):
                             "sCode"      : myStock["stockCode"],
                             "nQty"       : orderCount,
                             "nPrice"     : nowPrice,
-                            "reason"     : "TrailingStop 추가매수({0})".format(myStrategy["tsAddBuy"] + 1),
+                            "reason"     : "TrailingStop 추가매수({0})".format(myStrategy["tsAddBuy"]),
                         }, myStock);
 
                         if result != 0:
@@ -299,7 +299,7 @@ class MyStrategy(AbstractStrategy):
                         "sCode"      : myStock["stockCode"],
                         "nQty"       : orderCount,
                         "nPrice"     : nowPrice,
-                        "reason"     : "StopLoss 추가매수({0})".format(myStrategy["slAddBuy"] + 1),
+                        "reason"     : "StopLoss 추가매수({0})".format(myStrategy["slAddBuy"]),
                     }, myStock);
 
                     if result != 0:

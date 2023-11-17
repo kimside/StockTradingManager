@@ -14,5 +14,8 @@ def writeFile():
     print(f"time elapsed : {int(round((endTime - startTime) * 1000))}ms");
     """
 if __name__ == "__main__":    
-    n ="7000";
-    print("700" in n);
+    n = ["7000", "8000", "9000"];
+    #element in 'Bird' for element in animals
+    #[s for s in xs if "abc" in s]
+    t = [s for s in n if "701" in s];
+    print(t);
