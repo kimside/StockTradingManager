@@ -719,13 +719,15 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
                 "bgCol"      : bgCol       , #매수/매도/취소/정정 배경색 구분
             };
             
+            #에코 데이터.. 주문정정, 주문취소시.. +매수, -매도 마지막 데이터를 에코형식으로 다시 전송해준다..(주문유형이 접수만 수신됨)
+            isEcho = False;
             #우선 체결잔고/체결잔고이력 QTableWidget에 넣는다.(단 취소, 정정건은 체결잔고에 넣지 않는다.)
             if not chejan["hogaGb"] in ["매수취소", "매도취소", "매수정정", "매도정정"]:
-                #에코 데이터.. 주문정정, 주문취소시.. +매수, -매도 마지막 데이터를 에코형식으로 다시 전송해준다..
                 #(현재 주문번호가 chejanHis에 원주문번호에 존재한다면 무시해야함)
                 if not chejan["orderNo"] in self.twChejanHisStocks.getColumnDatas("oriOrderNo"):
                     self.twChejanStocks.addRows(chejan);
-                
+                else:
+                    isEcho = True;
             self.twChejanHisStocks.addRows(chejan);
 
             #매수/매도 처리 후, 수신 데이터에 미체결 수량이 없다면.. 미체결 잔고 QTableWidget에서 해당 행 삭제
@@ -735,7 +737,7 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
             #(분할로 매수될 경우 단위체결가가 다르기 때문에.. 매수 접수된 금액기준으로 계산하여 세금 반영, 때문에 오차가 발생할 수 있다.)
             #ex) 1700원을 10주 매도하는데 1개씩 매도체결될 경우 각각의 수수료와 세금은 없지만.. 매도주문건 전체로 보면.. 17000원에 대한.. 수수료와 세금이 존재한다.
             #    단 매도주문을 1주씩 따로따로 하면.. 수수료와 세금도 각각 개별 주문별로 따로 처리해서 상관없다.. (초당 sendOrder 5건 제한으로... 아쉽...)
-            if chejan["orderStatus"] == "접수":
+            if chejan["orderStatus"] == "접수" and isEcho == False:
                 orderScrNoName = "기타주문";
                 if chejan.get("screenNo", "3999") in self.orderScrNo:
                     orderScrNoName = self.orderScrNo[chejan.get("screenNo", "3999")];

@@ -158,14 +158,14 @@ class MyStrategy(AbstractStrategy):
 
         if myStrategy["tsActive"]:
             #목표 수익율 진입
-            if myStrategy["tsDivSell"] == 0:
+            if myStrategy["tsDivSell"] < 1:
                 #현재 수익율이 목표수익율 달성시 최초 분할매도
                 orderCount = int(myStock["reminingCount"] * self.tsDivRate / 100);
                 orderCount = myStock["reminingCount"] \
                              if orderCount == 0 else  \
                              orderCount;
                 if orderCount > 0:
-                    myStrategy["tsDivSell"] += 1;
+                    myStrategy["tsDivSell"] = 1;
                     #수익달성시 재매수 금지목록에 추가한다
                     self.appSettings.orderList.add((obj["f9001"], obj["f302"]));
                     result = self.sendOrder({
@@ -178,7 +178,7 @@ class MyStrategy(AbstractStrategy):
                     }, myStock);
 
                     if result != 0:
-                        myStrategy["tsDivSell"] -= 1;
+                        myStrategy["tsDivSell"] = 0;
             
             elif nowPrice > myStrategy["averagePrice"] + int(myStrategy["averagePrice"] * (self.tsProfitRate + (myStrategy["tsDivSell"] * self.tsDivProfitRate)) / 100):
                 #현재가가 초과 수익가를 넘었다면 분할매도
@@ -397,19 +397,6 @@ class MyStrategy(AbstractStrategy):
             elif order["nOrderType"] in [3, 4]:
                 #매수취소(3), #매도취소(4)
                 #취소항목은 addChejanSlot에서 완료 메세지를 받으면 그때 처리하자....
-                myStrategy = self.myStrategy[order["stockCode"]]   \
-                     if order["stockCode"] in self.myStrategy else \
-                     None;
-                
-                if myStrategy != None:
-                    if order["sScrNo"] == "3011":#TrailingStop 손실 추가매수 취소
-                        myStrategy["tsAddBuy"] -= 1;
-                    elif order["sScrNo"] in ["3012", "3013", "3014"]:#TrailingStop 목표수익율 달성시 최초, 추가수익, 수익보존, 추가매수 초과손실 매도 취소
-                        myStrategy["tsDivSell"] -= 1;
-                    elif order["sScrNo"] == "3021":#StopLoss 손실 추가매수
-                        myStrategy["slAddBuy"] -= 1;
-                    elif order["sScrNo"] == ["3022", "3023"]:#StopLoss 수익 달성, 추가매수 초과손실 매도
-                        myStrategy["slDivSell"] -= 1;
                     
                 result = self.parent.sendOrder({
                     "sRQName"    : "{0}({1})".format(stock["stockName"], stock["stockCode"]),
@@ -422,16 +409,6 @@ class MyStrategy(AbstractStrategy):
                     "reason"     : order["reason"     ],#주문사유
                     "sOrgOrderNo": order["sOrgOrderNo"],#원주문번호
                 });
-
-                if myStrategy != None and result != 0:
-                    if order["sScrNo"] == "3011":#TrailingStop 손실 추가매수 취소
-                        myStrategy["tsAddBuy"] += 1;
-                    elif order["sScrNo"] in ["3012", "3013", "3014"]:#TrailingStop 목표수익율 달성시 최초, 추가수익, 수익보존, 추가매수 초과손실 매도 취소
-                        myStrategy["tsDivSell"] += 1;
-                    elif order["sScrNo"] == "3021":#StopLoss 손실 추가매수
-                        myStrategy["slAddBuy"] += 1;
-                    elif order["sScrNo"] == ["3022", "3023"]:#StopLoss 수익 달성, 추가매수 초과손실 매도
-                        myStrategy["slDivSell"] += 1;
             
             elif result == -308:
                 time.sleep(0.25);
