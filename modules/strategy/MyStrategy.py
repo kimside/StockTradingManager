@@ -397,6 +397,20 @@ class MyStrategy(AbstractStrategy):
             elif order["nOrderType"] in [3, 4]:
                 #매수취소(3), #매도취소(4)
                 #취소항목은 addChejanSlot에서 완료 메세지를 받으면 그때 처리하자....
+                myStrategy = self.myStrategy[order["stockCode"]]   \
+                     if order["stockCode"] in self.myStrategy else \
+                     None;
+                
+                if myStrategy != None:
+                    if order["sScrNo"] == "3011":#TrailingStop 손실 추가매수 취소
+                        myStrategy["tsAddBuy"] -= 1;
+                    elif order["sScrNo"] in ["3012", "3013", "3014"]:#TrailingStop 목표수익율 달성시 최초, 추가수익, 수익보존, 추가매수 초과손실 매도 취소
+                        myStrategy["tsDivSell"] -= 1;
+                    elif order["sScrNo"] == "3021":#StopLoss 손실 추가매수
+                        myStrategy["slAddBuy"] -= 1;
+                    elif order["sScrNo"] == ["3022", "3023"]:#StopLoss 수익 달성, 추가매수 초과손실 매도
+                        myStrategy["slDivSell"] -= 1;
+                    
                 result = self.parent.sendOrder({
                     "sRQName"    : "{0}({1})".format(stock["stockName"], stock["stockCode"]),
                     "sAccNo"     : self.parent.gbMyAccount.uValue1.currentData(),
@@ -408,6 +422,17 @@ class MyStrategy(AbstractStrategy):
                     "reason"     : order["reason"     ],#주문사유
                     "sOrgOrderNo": order["sOrgOrderNo"],#원주문번호
                 });
+
+                if myStrategy != None and result != 0:
+                    if order["sScrNo"] == "3011":#TrailingStop 손실 추가매수 취소
+                        myStrategy["tsAddBuy"] += 1;
+                    elif order["sScrNo"] in ["3012", "3013", "3014"]:#TrailingStop 목표수익율 달성시 최초, 추가수익, 수익보존, 추가매수 초과손실 매도 취소
+                        myStrategy["tsDivSell"] += 1;
+                    elif order["sScrNo"] == "3021":#StopLoss 손실 추가매수
+                        myStrategy["slAddBuy"] += 1;
+                    elif order["sScrNo"] == ["3022", "3023"]:#StopLoss 수익 달성, 추가매수 초과손실 매도
+                        myStrategy["slDivSell"] += 1;
+            
             elif result == -308:
                 time.sleep(0.25);
             

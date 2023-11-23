@@ -569,6 +569,7 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
                             "tsAddBuy"    : 0,
                             "slAddBuy"    : 0,
                         };
+                
                 for idx in indexResult:
                     indexValue = float(idx["sField03"]);
                     if idx["sField01"] == "001":#업종(001:코스피, 101:코스닥)
@@ -593,9 +594,6 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
     
     #실시간 수신 데이터 Grid에 반영
     def stockSignalSlot(self, obj):
-        if "001" in obj["f920"]:
-            print(obj["f920"]);
-        
         self.vProcCnt.setText(str(int(self.vProcCnt.text()) + 1));
         sScrNoList = obj["f920"].split(";") \
                      if "f920" in obj else  \
