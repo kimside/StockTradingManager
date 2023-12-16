@@ -268,23 +268,23 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
     #TableWdiget 컬럼 초기화
     def initTableWidget(self):
         self.twConStocks.initWidget([
-            {"id": "stockCode"    , "name": "종목코드", "type": str, "isKey" : True},
+            {"id": "stockCode"    , "name": "종목코드", "type": str,   "isKey" : True},
             {"id": "stockName"    , "name": "종목명"  , "type": str},
             {"id": "nowPrice"     , "name": "현재가"  , "type": int},
             {"id": "stdPrice"     , "name": "기준가"  , "type": int},
-            {"id": "diffPrice"    , "name": "전일대비", "type": int, "formatter": "{0:+,}"},
+            {"id": "diffPrice"    , "name": "전일대비", "type": int,   "formatter": "{0:+,}"},
             {"id": "changeRate"   , "name": "등락율"  , "type": float, "formatter": "{0:+.2f}%", "isBg": True},
             {"id": "tradeCount"   , "name": "거래량"  , "type": int},
             {"id": "tradeStrength", "name": "체결강도", "type": float},
         ]);
         
         self.twMyStocks.initWidget([
-            {"id": "stockCode"     , "name": "종목코드"  , "type": str, "isKey" : True},
+            {"id": "stockCode"     , "name": "종목코드"  , "type": str,   "isKey" : True},
             {"id": "stockName"     , "name": "종목명"    , "type": str},
             {"id": "averagePrice"  , "name": "평균단가"  , "type": int},
             {"id": "nowPrice"      , "name": "현재가"    , "type": int},
             {"id": "breakEvenPrice", "name": "손익분기가", "type": int},
-            {"id": "profit"        , "name": "손익금액"  , "type": int, "formatter": "{0:+,}"},
+            {"id": "profit"        , "name": "손익금액"  , "type": int,   "formatter": "{0:+,}"},
             {"id": "profitRate"    , "name": "손익율"    , "type": float, "formatter": "{0:+.2f}%", "isBg": True},
             {"id": "buyAmount"     , "name": "매입금액"  , "type": int},
             {"id": "nowAmount"     , "name": "평가금액"  , "type": int},
@@ -368,7 +368,7 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
                         break;
             
             if self.kwargs.get("accountNo", "") != "" and self.kwargs.get("condition", "") != "":
-                time.sleep(0.5);#배치로 실행시 초기화를 위한 데이터 조회량이 많아 요청제한에 걸릴수 있어 0.5초 이후 실행함
+                time.sleep(1);#배치로 실행시 초기화를 위한 데이터 조회량이 많아 요청제한에 걸릴수 있어 0.5초 이후 실행함
                 self.btnRunSlot();
         else:
             self.cbConUp.clear();

@@ -1,5 +1,5 @@
 import zipfile, pprint;
-DIR_PATH = "D:/OpenAPI/data/";
+DIR_PATH = "C:/OpenAPI/data/";
 
 def read_enc(opt_fname):
     fpath    = DIR_PATH + "{}.enc".format(opt_fname);

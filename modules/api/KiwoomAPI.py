@@ -425,7 +425,6 @@ class KiwoomAPI(LogMaker, metaclass=Singleton):
             "sMsg"   : ("다건(Multiple) {0}건의 종목정보 검색을 요청하였습니다").format(len(codeList.split(";"))),
         });
         
-        self.onReceiveTrDataLoop = QtCore.QEventLoop()
         if not self.onReceiveTrDataLoop.isRunning():
             self.onReceiveTrDataLoop.exec_();
         
