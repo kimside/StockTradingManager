@@ -920,8 +920,8 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
                             myStock = self.calcStock(myStock);
                             self.twMyStocks.addRows(myStock);
                         else:
-                            #잔고수량 - 체결수량 == 0이라면.. 계좌정보에서 해당 종목삭제 아니라면 업데이트 
-                            reminingCount = myStock["stockCount"] - int(chejan["unitCount"]);
+                            #잔고수량 - 체결수량 == 0이라면.. 계좌정보에서 해당 종목삭제 아니라면 업데이트
+                            reminingCount = myStock["stockCount"] - int(chejan["unitCount"] if chejan["unitCount"] != "" else chejan["orderCount"]);
                             if reminingCount == 0:
                                 self.twMyStocks.delRows(chejan["stockCode"]);
                                 self.setRealRemove("4000", chejan["stockCode"]);
@@ -937,7 +937,7 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
                         self.twChejanStocks.delRows(chejan["orderNo"]);
 
                     self.addConsoleSlot({
-                        "sRQName": self.orderScrNo[chejan.get("screenNo", "3999")],
+                        "sRQName": "3999" if self.orderScrNo[chejan.get("screenNo", "3999")] else self.orderScrNo[chejan.get("screenNo", "3999")],
                         "sTrCode": "",
                         "sScrNo" : chejan["screenNo"],
                         "sMsg"   : "{0}({1}) [주문:{2}, 미체결:{3}, 단위체결:{4}]주문이 체결되었습니다.(주문번호:{5})".format(
