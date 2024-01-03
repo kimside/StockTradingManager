@@ -737,11 +737,11 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
             #(분할로 매수될 경우 단위체결가가 다르기 때문에.. 매수 접수된 금액기준으로 계산하여 세금 반영, 때문에 오차가 발생할 수 있다.)
             #ex) 1700원을 10주 매도하는데 1개씩 매도체결될 경우 각각의 수수료와 세금은 없지만.. 매도주문건 전체로 보면.. 17000원에 대한.. 수수료와 세금이 존재한다.
             #    단 매도주문을 1주씩 따로따로 하면.. 수수료와 세금도 각각 개별 주문별로 따로 처리해서 상관없다.. (초당 sendOrder 5건 제한으로... 아쉽...)
+            orderScrNoName = "기타주문";
+            if chejan.get("screenNo", "3999") in self.orderScrNo:
+                orderScrNoName = self.orderScrNo[chejan.get("screenNo", "3999")];
+            
             if chejan["orderStatus"] == "접수" and isEcho == False:
-                orderScrNoName = "기타주문";
-                if chejan.get("screenNo", "3999") in self.orderScrNo:
-                    orderScrNoName = self.orderScrNo[chejan.get("screenNo", "3999")];
-                
                 if chejan["hogaGb"] == "매수정정":
                     #[+매수] 주문의 수량을 정정한다...(부분체결 진행중이면???)
                     chejanStocks = self.twChejanStocks.getRowDatas(chejan["oriOrderNo"]);
@@ -883,7 +883,7 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
                         self.twChejanStocks.delRows(chejan["orderNo"]);
 
                     self.addConsoleSlot({
-                        "sRQName": self.orderScrNo[chejan.get("screenNo", "3999")],
+                        "sRQName": orderScrNoName,
                         "sTrCode": "",
                         "sScrNo" : chejan["screenNo"],
                         "sMsg"   : "{0}({1}) [주문:{2}, 미체결:{3}, 단위체결:{4}]주문이 체결되었습니다.(주문번호:{5})".format(
@@ -937,7 +937,7 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
                         self.twChejanStocks.delRows(chejan["orderNo"]);
 
                     self.addConsoleSlot({
-                        "sRQName": "3999" if self.orderScrNo[chejan.get("screenNo", "3999")] else self.orderScrNo[chejan.get("screenNo", "3999")],
+                        "sRQName": orderScrNoName,
                         "sTrCode": "",
                         "sScrNo" : chejan["screenNo"],
                         "sMsg"   : "{0}({1}) [주문:{2}, 미체결:{3}, 단위체결:{4}]주문이 체결되었습니다.(주문번호:{5})".format(
