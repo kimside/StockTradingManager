@@ -399,10 +399,10 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
                 "output": Opw00004(),
             });
 
-            #데이터 조회시 211("1초 이내에 조회 요청이 5회를 초과하였습니다. 잠시 기다려주십시오.) 오류가 발생하여.. 잠깐 Sleep 시킴
-            time.sleep(1);
-            
             if type(accountInfo) == Opw00004:
+                #데이터 조회시 211("1초 이내에 조회 요청이 5회를 초과하였습니다. 잠시 기다려주십시오.) 오류가 발생하여.. 잠깐 Sleep 시킴
+                time.sleep(1);
+                
                 opw00011 = self.reqCommRqData({
                     "sRQName": "증거금율별주문가능수량조회요청",
                     "sTrCode": "opw00011",
