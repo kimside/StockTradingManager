@@ -368,13 +368,13 @@ class MyStrategy(AbstractStrategy):
                 result = self.parent.sendOrder({
                     "sRQName"   : "{0}({1})".format(stock["stockName"], stock["stockCode"]),
                     "sAccNo"    : self.parent.gbMyAccount.uValue1.currentData(),
-                    "sScrNo"    : order["sScrNo"    ],                                            #화면번호
-                    "nOrderType": order["nOrderType"],                                            #주문유형 1:신규매수, 2:신규매도 3:매수취소, 4:매도취소, 5:매수정정, 6:매도정정
-                    "sHogaGb"   : order.get("sHogaGb", "00"),                                     #거래구분(sHogaGb) 00: 지정가, 03: 시장가
-                    "sCode"     : order["sCode"     ],                                            #종목코드
-                    "nQty"      : order["nQty"      ],                                            #주문수량
-                    "nPrice"    : order["nPrice"    ] if order.get("sHogaGb", "00") == 00 else 0, #주문가격
-                    "reason"    : order["reason"    ],                                            #주문사유
+                    "sScrNo"    : order["sScrNo"    ],                                              #화면번호
+                    "nOrderType": order["nOrderType"],                                              #주문유형 1:신규매수, 2:신규매도 3:매수취소, 4:매도취소, 5:매수정정, 6:매도정정
+                    "sHogaGb"   : order.get("sHogaGb", "00"),                                       #거래구분(sHogaGb) 00: 지정가, 03: 시장가
+                    "sCode"     : order["sCode"     ],                                              #종목코드
+                    "nQty"      : order["nQty"      ],                                              #주문수량
+                    "nPrice"    : order["nPrice"    ] if order.get("sHogaGb", "00") == "00" else 0, #주문가격
+                    "reason"    : order["reason"    ],                                              #주문사유
                 });
 
                 #chejanSignalSlot처리하려고 했는데.. QTableWidget갱신에 시간이 오래 걸리면 무한 매도 주문이 나가서 서버랑 연결이 끊어짐..
@@ -388,13 +388,13 @@ class MyStrategy(AbstractStrategy):
                 result = self.parent.sendOrder({
                     "sRQName"   : "{0}({1})".format(stock["stockName"], stock["stockCode"]),
                     "sAccNo"    : self.parent.gbMyAccount.uValue1.currentData(),
-                    "sScrNo"    : order["sScrNo"    ],                                            #화면번호
-                    "nOrderType": order["nOrderType"],                                            #주문유형 1:신규매수, 2:신규매도 3:매수취소, 4:매도취소, 5:매수정정, 6:매도정정
-                    "sHogaGb"   : order.get("sHogaGb", "00"),                                     #거래구분(sHogaGb) 00: 지정가, 03: 시장가
-                    "sCode"     : order["sCode"     ],                                            #종목코드
-                    "nQty"      : order["nQty"      ],                                            #주문수량
-                    "nPrice"    : order["nPrice"    ] if order.get("sHogaGb", "00") == 00 else 0, #주문가격
-                    "reason"    : order["reason"    ],                                            #주문사유
+                    "sScrNo"    : order["sScrNo"    ],                                              #화면번호
+                    "nOrderType": order["nOrderType"],                                              #주문유형 1:신규매수, 2:신규매도 3:매수취소, 4:매도취소, 5:매수정정, 6:매도정정
+                    "sHogaGb"   : order.get("sHogaGb", "00"),                                       #거래구분(sHogaGb) 00: 지정가, 03: 시장가
+                    "sCode"     : order["sCode"     ],                                              #종목코드
+                    "nQty"      : order["nQty"      ],                                              #주문수량
+                    "nPrice"    : order["nPrice"    ] if order.get("sHogaGb", "00") == "00" else 0, #주문가격
+                    "reason"    : order["reason"    ],                                              #주문사유
                 });
 
             elif order["nOrderType"] in [3, 4]:
