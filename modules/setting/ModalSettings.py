@@ -138,6 +138,7 @@ class ModalSetting(QtWidgets.QDialog, uic.loadUiType(resource_path("modules/sett
             self.settings.setValue("lastRunDate", self.lastRunDate);
             self.orderList = set([]);
             self.settings.setValue("orderList", self.orderList);
+            self.parent.appSettings.__setattr__("orderList", self.orderList);
             #for key in self.myStrategy:
             #    self.myStrategy[key]["tsActive"   ] = False;
             #    self.myStrategy[key]["tsHighPrice"] = 0;

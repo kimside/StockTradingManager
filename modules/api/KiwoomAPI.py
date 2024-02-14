@@ -333,7 +333,7 @@ class KiwoomAPI(LogMaker, metaclass=Singleton):
             "sScrNo" : sScrNo,
             "sRQName": "시스템",
             "sTrCode": "",
-            "sMsg"   : ("{0} 조건검색결 중지 처리를 {1}하였습니다.").format(conName, "성공"),
+            "sMsg"   : ("{0} 조건검색 중지 처리를 {1}하였습니다.").format(conName, "성공"),
         });
 
     #조건검색결과 요청콜백
@@ -352,7 +352,7 @@ class KiwoomAPI(LogMaker, metaclass=Singleton):
             "sScrNo" : sScrNo,
             "sRQName": "시스템",
             "sTrCode": "",
-            "sMsg"   : ("{0} 조건검색결 결과 수신이 성공하였습니다.").format(conName),
+            "sMsg"   : ("{0} 조건검색결과 수신이 성공하였습니다.").format(conName),
         });
 
         if self.sendConditionLoop.isRunning():
@@ -377,27 +377,27 @@ class KiwoomAPI(LogMaker, metaclass=Singleton):
         if sType == "I":
             self.setRealReg("8000", sCode[-6:]);
         else:
-            #모니터링을 위해서는 계속 수신해야 하는데.. 실시간조회 삭제??
-            #self.setRealRemove("8000", sCode[-6:]);
-            #self.setRealReg("8000", sCode[-6:]);
             pass;
+            #self.setRealRemove("8000", sCode[-6:]);
         
+        """
         #수신 빈도가 높아서 임시로 보류
-        #self.apiMsgSignal.emit({
-        #    "sScrNo" : "9999",
-        #    "sRQName": "시스템",
-        #    "sTrCode": "",
-        #    "sMsg"   : ("조건검색결과({0})에 {1}: {2}({3})").format(sConName, "(+)종목편입" if sType == "I" else "(-)종목이탈", masterCodeName, sCode[-6:]),
-        #});
-
-        #self.writeLog("condition", logCondition({
-        #    "conId": sConId,
-        #    "conNm": sConName,
-        #    "f302" : masterCodeName,
-        #    "f9001": sCode[-6:],
-        #    "inout": "종목편입" if sType == "I" else "종목이탈",
-        #});
-
+        self.apiMsgSignal.emit({
+            "sScrNo" : "9999",
+            "sRQName": "시스템",
+            "sTrCode": "",
+            "sMsg"   : ("조건검색결과({0})에 {1}: {2}({3})").format(sConName, "(+)종목편입" if sType == "I" else "(-)종목이탈", masterCodeName, sCode[-6:]),
+        });
+        
+        self.writeLog("condition", {
+            "conId": sConId,
+            "conNm": sConName,
+            "f302" : masterCodeName,
+            "f9001": sCode[-6:],
+            "inout": "종목편입" if sType == "I" else "종목이탈",
+        });
+        """
+        
     #복수종목조회 요청처리
     #sArrCode,   // 조회하려는 종목코드 리스트
     #bNext,      // 연속조회 여부 0:기본값, 1:연속조회(지원안함)

@@ -14,7 +14,7 @@ class MyStrategy(AbstractStrategy):
         self.parent = parent;
         self.appSettings = self.parent.appSettings;
         self.myStrategy  = self.appSettings.myStrategy;
-        self.monentSize  = 100;
+        self.monentSize  = 150;
         self.datetime    = datetime.datetime;
         self.buyTaxRate  = self.parent.buyTaxRate; #매수 수수료
         
@@ -61,23 +61,25 @@ class MyStrategy(AbstractStrategy):
                 if not (obj["f9001"], obj["f302"]) in self.appSettings.orderList \
                     and len(self.appSettings.orderList) <= self.tradeMaxCount    \
                     and self.parent.twMyStocks.isExist(obj["f9001"]) == None     \
-                    and len(thisStrategy["momentList"]) > 30                     \
+                    and len(thisStrategy["momentList"]) > 50                     \
                     and thisStrategy["momentStrength"]  > 150:
                     
-                    orderCount = self.getBuyCount(int(obj["f10"]));
-                    if orderCount > 0:
+                    order = self.getBuyCount({
+                        "sScrNo"    : "3001",
+                        "nOrderType": 1,
+                        "sCode"     : obj["f9001"],
+                        "sCount"    : 0,
+                        "nQty"      : 0,
+                        "nPrice"    : obj["f10"  ],
+                        "reason"    : "조건검색 신규 매수"
+                    });
+
+                    if order["nQty"] > 0:
                         #체결,잔고 signal받는 곳에서 처리할려고 했는데.. 그사이 너무 많이 매수 신청을 해서.. 신청즉시 재매수금지 등록을 해야함
                         #근데... 신청결과에서는 잔고부족이나, 기타 다른 오류는 확인이 불가한데... 이거 신청만 되고 체결이 안되면..
                         #그냥 재매수 금지항목에만 등록되는건데. 뭐 다른 방법이 없나???
                         self.appSettings.orderList.add((obj["f9001"], obj["f302"]));
-                        result = self.sendOrder({
-                            "sScrNo"    : "3001",
-                            "nOrderType": 1,
-                            "sCode"     : obj["f9001"],
-                            "nQty"      : orderCount,
-                            "nPrice"    : obj["f10"  ],
-                            "reason"    : "조건검색 신규 매수"
-                        }, {
+                        result = self.sendOrder(order, {
                             "stockCode" : obj["f9001"],
                             "stockName" : obj["f302" ],
                         });
@@ -90,6 +92,7 @@ class MyStrategy(AbstractStrategy):
                 self.conStrategy[obj["stockCode"]] = {
                     "momentList"    : [],
                     "momentStrength": 0,
+                    "momentSell"    : 0,
                 };
     #매도전략
     def sellStrategy(self, obj):
@@ -114,6 +117,8 @@ class MyStrategy(AbstractStrategy):
         3012: TrailingStop(매도) 수익달성,
         3013: TrailingStop(매도) 수익보존,
         3014: TrailingStop(매도) 손실 전량매도,
+        3015: TrailingStop(매도) 수익 달성 후 매도비율 높을경우 전량매도,
+        3016: TrailingStop(매도) 추가매수 반등 수수료 전량매도,
         3021: StopLoss(매수) 손실 추가매수,
         3022: StopLoss(매도) 수익달성,
         3023: StopLoss(매도) 손실 전량매도,
@@ -206,40 +211,105 @@ class MyStrategy(AbstractStrategy):
                         myStrategy["tsDivSell"] -= 1;
 
             elif nowPrice > myStrategy["averagePrice"] and nowPrice < myStrategy["averagePrice"] + (myStrategy["tsHighPrice"] - myStrategy["averagePrice"]) * self.tsServeRate / 100:
-                #고점대비 현재가가 수익보존율 보다 낮다면 매도
+                #고점대비 현재가가 수익보존율 보다 낮다면 전량매도
+
+                ##해당 종목이 기존에 매도가 걸려 있다면.. 주문 취소(어떻게 주문취소가 끝난 이후를 알 수 있을까?)
+                ##1. twMyStocks에 보유갯수랑, 가능갯수가 같은지 확인
+                ##   2. 같다면 현재 주문 내역이 없는 종목으로 바로 전량 매도 주문
+                ##   3. 같지 않다면 twChejanStocks에 해당 종목의 주문번호로 twChejanHisStocks에 취소내역이 있는지 확인
+                ##      4. 있다면 이미 주문 취소가 된 내용으로 보유갯수, 가능갯수가 같을때까지 기다림
+                ##      5. 주문 취소 신청
+                if myStock["stockCount"] == myStock["reminingCount"]:
+                    if myStock["reminingCount"] > 0:
+                        myStrategy["tsDivSell"] += 1;
+                        #수익달성시 재매수 금지목록에 추가한다
+                        self.appSettings.orderList.add((obj["f9001"], obj["f302"]));
+                        result = self.sendOrder({
+                            "sScrNo"    : "3013",
+                            "nOrderType": 2,
+                            "sHogaGb"   : "03", #수익보존율 보다 낮을 경우 시장가 매도
+                            "sCode"     : myStock["stockCode"    ],
+                            "nQty"      : myStock["reminingCount"],
+                            "nPrice"    : nowPrice,
+                            "reason"    : "TrailingStop 수익보존 매도",
+                        }, myStock);
+
+                        if result != 0:
+                            myStrategy["tsDivSell"] -= 1;
+                else:
+                    chejanStocks = self.parent.twChejanStocks.getRowDatas(myStock["stockCode"]);
+                    for chejan in chejanStocks:
+                        if not chejan["orderNo"] in self.parent.twChejanHisStocks.getColumnDatas("oriOrderNo"):
+                            #취소 주문 내역이 없다면 취소주문
+                            self.orderCancel(chejan);
+            
+            elif myStrategy.get("momentSell", 0) > 68:
+                #수익율 달성이후 최근 매도비율 68% 초과시 전량 매도
+
+                ##해당 종목이 기존에 매도가 걸려 있다면.. 주문 취소(어떻게 주문취소가 끝난 이후를 알 수 있을까?)
+                ##1. twMyStocks에 보유갯수랑, 가능갯수가 같은지 확인
+                ##   2. 같다면 현재 주문 내역이 없는 종목으로 바로 전량 매도 주문
+                ##   3. 같지 않다면 twChejanStocks에 해당 종목의 주문번호로 twChejanHisStocks에 취소내역이 있는지 확인
+                ##      4. 있다면 이미 주문 취소가 된 내용으로 보유갯수, 가능갯수가 같을때까지 기다림
+                ##      5. 주문 취소 신청
+                if myStock["stockCount"] == myStock["reminingCount"]:
+                    if myStock["reminingCount"] > 0:
+                        myStrategy["tsDivSell"] += 1;
+                        #수익달성시 재매수 금지목록에 추가한다
+                        self.appSettings.orderList.add((obj["f9001"], obj["f302"]));
+                        result = self.sendOrder({
+                            "sScrNo"    : "3015",
+                            "nOrderType": 2,
+                            "sHogaGb"   : "03", #매도비율 68% 초과시 시장가 매도
+                            "sCode"     : myStock["stockCode"    ],
+                            "nQty"      : myStock["reminingCount"],
+                            "nPrice"    : nowPrice,
+                            "reason"    : "TrailingStop 현재 매도비율 {0}% 초과 수익보존 매도".format(myStrategy["momentSell"]),
+                        }, myStock);
+
+                        if result != 0:
+                            myStrategy["tsDivSell"] -= 1;
+                else:
+                    chejanStocks = self.parent.twChejanStocks.getRowDatas(myStock["stockCode"]);
+                    for chejan in chejanStocks:
+                        if not chejan["orderNo"] in self.parent.twChejanHisStocks.getColumnDatas("oriOrderNo"):
+                            #취소 주문 내역이 없다면 취소주문
+                            self.orderCancel(chejan);
+        
+        else:
+            #목표 수익율 미진입
+            if myStrategy["tsAddBuy"] != 0 and 50 > (100 / myStrategy["tsAddBuy"]) and myStock["profitRate"] > 1:
+                #종목의 추가매수 횟수 비율이 설정된 횟수에 비해 50%가 넘고 수익율이 1%이상 반등이라면 전량매도
                 if myStock["reminingCount"] > 0:
                     myStrategy["tsDivSell"] += 1;
-                    #수익달성시 재매수 금지목록에 추가한다
-                    self.appSettings.orderList.add((obj["f9001"], obj["f302"]));
                     result = self.sendOrder({
-                        "sScrNo"    : "3013",
+                        "sScrNo"    : "3016",
                         "nOrderType": 2,
-                        "sHogaGb"   : "03", #수익보존율 보다 낮을 경우 시장가 매도
                         "sCode"     : myStock["stockCode"    ],
                         "nQty"      : myStock["reminingCount"],
                         "nPrice"    : nowPrice,
-                        "reason"    : "TrailingStop 수익보존 매도",
+                        "reason"    : "TrailingStop(매도) 추가매수 반등 수수료 전량매도"
                     }, myStock);
 
                     if result != 0:
                         myStrategy["tsDivSell"] -= 1;
-
-        else:
-            #목표 수익율 미진입(손실율에 도달했다면)
-            if nowPrice < myStrategy["averagePrice"] + int(myStrategy["averagePrice"] * (self.tsLossRate + (self.tsLossRate * myStrategy["tsAddBuy"])) / 100):
+                pass;
+            elif nowPrice < myStrategy["averagePrice"] + int(myStrategy["averagePrice"] * (self.tsLossRate + (self.tsLossRate * myStrategy["tsAddBuy"])) / 100):
+                #추가매수(TrailingStop 추가매수 활성화, TrailingStop 추가매수 횟수확인)
                 if self.tsDivBuyActive and self.tsDivBuyCount > myStrategy["tsAddBuy"]:
-                    #추가매수(TrailingStop 추가매수 활성화, TrailingStop 추가매수 횟수확인)
-                    orderCount = self.getBuyCount(nowPrice);
-                    if orderCount > 0:
+                    order = self.getBuyCount({
+                        "sScrNo"     : "3011",
+                        "nOrderType" : 1,
+                        "sCode"      : myStock["stockCode" ],
+                        "sCount"     : myStock["stockCount"],
+                        "nQty"       : 0,
+                        "nPrice"     : nowPrice,
+                        "reason"     : "TrailingStop 추가매수({0})".format(myStrategy["tsAddBuy"]),
+                    });
+
+                    if order["nQty"] > 0:
                         myStrategy["tsAddBuy"] += 1;
-                        result = self.sendOrder({
-                            "sScrNo"     : "3011",
-                            "nOrderType" : 1,
-                            "sCode"      : myStock["stockCode"],
-                            "nQty"       : orderCount,
-                            "nPrice"     : nowPrice,
-                            "reason"     : "TrailingStop 추가매수({0})".format(myStrategy["tsAddBuy"]),
-                        }, myStock);
+                        result = self.sendOrder(order, myStock);
 
                         if result != 0:
                             myStrategy["tsAddBuy"] -= 1;
@@ -252,9 +322,10 @@ class MyStrategy(AbstractStrategy):
                         result = self.sendOrder({
                             "sScrNo"    : "3014",
                             "nOrderType": 2,
+                            "sHogaGb"   : "03", #시장가 매도
                             "sCode"     : myStock["stockCode"    ],
                             "nQty"      : myStock["reminingCount"],
-                            "nPrice"    : nowPrice,
+                            "nPrice"    : 0,
                             "reason"    : "TrailingStop 추가매수 초과 손실매도"
                                           if self.tsDivBuyActive and self.tsDivBuyCount < myStrategy["tsAddBuy"] else
                                           "TrailingStop 손실매도",
@@ -291,17 +362,18 @@ class MyStrategy(AbstractStrategy):
                 
         elif nowPrice < myStrategy["averagePrice"] + int(myStrategy["averagePrice"] * (self.slLoss + (self.slLoss * myStrategy["slAddBuy"])) / 100):
             if self.slDivBuyActive and self.slDivBuyCount > myStrategy["slAddBuy"]:
-                orderCount = self.getBuyCount(nowPrice);
-                if orderCount > 0:
+                order = self.getBuyCount({
+                    "sScrNo"     : "3021",
+                    "nOrderType" : 1,
+                    "sCode"      : myStock["stockCode" ],
+                    "sCount"     : myStock["stockCount"],
+                    "nQty"       : 0,
+                    "nPrice"     : nowPrice,
+                    "reason"     : "StopLoss 추가매수({0})".format(myStrategy["slAddBuy"]),
+                });
+                if order["nQty"] > 0:
                     myStrategy["slAddBuy"] += 1;
-                    result = self.sendOrder({
-                        "sScrNo"     : "3021",
-                        "nOrderType" : 1,
-                        "sCode"      : myStock["stockCode"],
-                        "nQty"       : orderCount,
-                        "nPrice"     : nowPrice,
-                        "reason"     : "StopLoss 추가매수({0})".format(myStrategy["slAddBuy"]),
-                    }, myStock);
+                    result = self.sendOrder(order, myStock);
 
                     if result != 0:
                         myStrategy["slAddBuy"] -= 1;
@@ -346,15 +418,30 @@ class MyStrategy(AbstractStrategy):
                     time.sleep(0.25);
 
     #매수가능 수량 조회
-    def getBuyCount(self, nowPrice):
-        vOrderableAmount = self.parent.gbMyAccount.getAccountInfo()["vOrderableAmount"]; #주문가능금액
+    def getBuyCount(self, order):
+        myAccountInfo = self.parent.gbMyAccount.getAccountInfo();
+        vOrderableAmount = myAccountInfo["vOrderableAmount"]; #주문가능금액
+        nPrice = int(order["nPrice"]);
         orderAmount = 0;
-        if self.buyRateActive:
-            orderAmount = vOrderableAmount * (self.buyRate / 100);
-        else:
-            orderAmount = self.buyAmount if vOrderableAmount > self.buyAmount else vOrderableAmount;
-        buyAmount = (nowPrice + int(nowPrice * self.buyTaxRate / 10 * 10));
-        return int(orderAmount / buyAmount);
+        
+        if order["sScrNo"] != "3001":#추가매수의 경우 보유수량과 동일한 수량 매수, 단 금액이 부족하다면.. 금액 한도 내에서 매수
+            orderAmount = order["sCount"] * int(nPrice * self.buyTaxRate / 10 * 10);
+            if orderAmount > vOrderableAmount:
+                order["nQty"] = int(vOrderableAmount / int(nPrice * self.buyTaxRate / 10 * 10));
+            else:
+                order["nQty"] = order["sCount"];
+        else:#신규매수의 경우 추가매수 예비금을 제한 비율로 매수
+            #추가매수 예수금 = (평가잔액 + 예수금) * 매수비율%
+            addBuyReserveAmount = int((myAccountInfo["vTotalNowAmount"] +  myAccountInfo["vOrderableAmount"]) * self.buyRate / 100); #추가매수 예비금
+
+            if self.buyRateActive:
+                orderAmount = (vOrderableAmount - addBuyReserveAmount) * (self.buyRate / 100);
+            else:
+                orderAmount = self.buyAmount if (vOrderableAmount - addBuyReserveAmount) > self.buyAmount else (vOrderableAmount - addBuyReserveAmount);
+            
+            buyAmount = (nPrice + int(nPrice * self.buyTaxRate / 10 * 10));
+            order["nQty"] = int(orderAmount / buyAmount) if orderAmount > 0 else 0;
+        return order;
 
     #주문신청
     def sendOrder(self, order, stock):
@@ -419,7 +506,7 @@ class MyStrategy(AbstractStrategy):
             return result;
     
         else:
-            print("{0} - 주문확인필요: {1}({2}) {3}주, {4},".format(self.datetime.now(), stock["stockName"], stock["stockCode"], order["nQty"], order["reason"]))
+            print("{0} - 주문확인필요: {1}({2}) {3}주, {4},".format(self.datetime.now(), stock["stockName"], stock["stockCode"], order["nQty"], order["reason"]));
             return -1;        
             
     #데이터 수집 및 분석
@@ -441,12 +528,14 @@ class MyStrategy(AbstractStrategy):
                     buySum += cnt;
                 else:
                     sellSum += cnt;
-            #최근체결강도 확인(마지막 100틱 거래량 기준)
-            conStrategy["momentStrength"] = int(abs(buySum) / abs(sellSum if sellSum != 0 else 1) * 100);
+            
+            conStrategy["momentStrength"] = int(buySum / abs(sellSum if sellSum != 0 else 1) * 100); #최근체결강도 확인
+            conStrategy["momentSell"]     = int((abs(sellSum) / (buySum + abs(sellSum))) * 100);     #최근매도비율
         else:
             self.conStrategy[obj["f9001"]] = {
                 "momentList"    : [],
                 "momentStrength": 0,
+                "momentSell"    : 0,
             };
         
         #보유주식 계좌 전략분석

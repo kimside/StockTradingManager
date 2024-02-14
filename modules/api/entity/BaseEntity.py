@@ -30,5 +30,8 @@ class BaseEntity(object):
         return json.dumps(self.__dict__, ensure_ascii = False);
 
 if __name__ == "__main__":
-    s = set([("1","A"), ("2","A"), ("3","A"), ("4","A")]);
-    print(list(s)[0][0]);
+    s = "a;b;c;d;";
+    sa = s.split(";");
+    for idx, key in enumerate(sa):
+        if key != "":
+            print(idx, sa[idx]);

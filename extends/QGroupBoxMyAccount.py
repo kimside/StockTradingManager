@@ -135,4 +135,6 @@ class QGroupBoxMyAccount(QtWidgets.QGroupBox, uic.loadUiType(resource_path("exte
         return vOrderableAmount;
 
 if __name__ == "__main__":
-    pass;
+    a = {"sHoga" : "00"};
+    print(a.get("sHoga", "TEST") == "00");
+

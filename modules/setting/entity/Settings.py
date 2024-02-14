@@ -47,7 +47,6 @@ class Settings(object):
     def sync(self):
         self.settings.setValue("orderList", self.orderList);
         self.settings.setValue("myStrategy", self.myStrategy);
-        #self.settings.sync();
         
 if __name__ == "__main__":
     a = "0";

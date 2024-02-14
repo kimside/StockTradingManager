@@ -323,7 +323,7 @@ class LogMaker:
             "f903"     : {"size":  7, "align": ">", "desc": "체결누계금액"},
             "f904"     : {"size":  0, "align":  "", "desc": "원주문번호"},
             "f905"     : {"size":  8, "align": ">", "desc": "주문구분"},
-            "f906"     : {"size":  0, "align":  "", "desc": "매매구분"},
+            "f906"     : {"size":  6, "align": ">", "desc": "매매구분"},
             "f907"     : {"size":  0, "align":  "", "desc": "매도수구분"},
             "f908"     : {"size":  6, "align":  "", "desc": "주문/체결시간"},
             "f909"     : {"size":  7, "align": ">", "desc": "체결번호"},

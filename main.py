@@ -2,7 +2,7 @@ import sys, os, datetime, ctypes, traceback, logging, time, telegram, asyncio;
 
 from telegram.constants import ParseMode;
 
-from PyQt5                              import uic, QtWidgets, QtCore, QtGui, QAxContainer;
+from PyQt5                              import uic, QtWidgets, QtCore, QtGui;
 from extends.QTableWidgetMyStocks       import *;
 
 from modules.api.KiwoomAPI              import KiwoomAPI;
@@ -23,6 +23,7 @@ from modules.test.TestChejan1           import TestChejan1;
 from modules.test.TestCode              import TestCode, MyThread;
 from modules.setting.entity.Settings    import Settings;
 from modules.strategy.MyStrategy        import MyStrategy;
+from modules.strategy.InfiniteStrategy  import InfiniteStrategy;
 
 loggingDir = "logging/{0}/".format(datetime.datetime.now().strftime("%Y%m%d"));
 os.makedirs(os.path.dirname(loggingDir), exist_ok=True);
@@ -40,6 +41,8 @@ logger=logging.getLogger(__name__);
     3012: TrailingStop(매도) 수익달성,
     3013: TrailingStop(매도) 수익보존,
     3014: TrailingStop(매도) 손실 전량매도,
+    3015: TrailingStop(매도) 수익달성 이후 매도비율 높을경우 전량 매도,
+    3016: TrailingStop(매도) 추가매수 반등 수수료 전량매도,
     3021: StopLoss(매수) 손실 추가매수,
     3022: StopLoss(매도) 수익달성,
     3023: StopLoss(매도) 손실 전량매도,
@@ -77,8 +80,9 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
         self.testChejan0      = TestChejan0(self);     #Chejan0  Test Dialog(Modal)
         self.testChejan1      = TestChejan1(self);     #Chejan1  Test Dialog(Modal)
         self.testCode         = TestCode(self);        #TestCode Test Dialog(Modal)
-        self.myStrategy       = MyStrategy(self);
-        
+        #self.myStrategy       = MyStrategy(self);
+        self.myStrategy       = InfiniteStrategy(self);
+
         #Setting self variable
         self.vAccountPlusEndActive  = self.appSettings.vAccountPlusEndActive;
         self.vAccountPlusEnd        = self.appSettings.vAccountPlusEnd;
@@ -140,6 +144,8 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
             "3012": "TrailingStop(매도) 수익달성",
             "3013": "TrailingStop(매도) 수익보존",
             "3014": "TrailingStop(매도) 손실 전량매도",
+            "3015": "TrailingStop(매도) 수익 달성 후 매도비율 높을경우 전량매도",
+            "3016": "TrailingStop(매도) 추가매수 반등 수수료 전량매도",
             "3021": "StopLoss(매수) 손실 추가매수",
             "3022": "StopLoss(매도) 수익달성",
             "3023": "StopLoss(매도) 손실 전량매도",
@@ -209,6 +215,18 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
         self.processCounter.setInterval(1000);
         self.processCounter.timeout.connect(self.clearProcCnt);
         self.processCounter.start();
+        
+        """
+        botIds = self.appSettings.vBotId.split(";");
+        # 챗봇 application 인스턴스 생성
+        application = ApplicationBuilder().token(botIds[0]).build();
+        # start 핸들러 생성
+        start_handler = CommandHandler('echo', self.echo);
+        # 핸들러 추가
+        application.add_handler(start_handler);
+        # 폴링 방식으로 실행
+        application.run_polling(poll_interval=2);
+        """
     
     #텔레그램 메세지 발송
     async def sendMessage(self, telegramMsg): #실행시킬 함수명 임의지정
@@ -218,8 +236,14 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
         if self.kwargs.get("mode", "stage") != "debug":
             if self.appSettings.vBotId != "" and self.appSettings.vChatId != "":
                 try:
-                    bot = telegram.Bot(self.appSettings.vBotId);
-                    await bot.send_message(self.appSettings.vChatId, telegramMsg, ParseMode.HTML);
+                    botIds = self.appSettings.vBotId.split(";");
+                    chatIds = self.appSettings.vChatId.split(";");
+                    
+                    for idx, value in enumerate(botIds):
+                        if value != "":
+                            bot = telegram.Bot(botIds[idx]);
+                            await bot.send_message(chatIds[idx], telegramMsg, ParseMode.HTML);
+                
                 except Exception as e:
                     self.addConsoleSlot({
                         "sRQName": "Telegram",
@@ -256,6 +280,15 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
             self.myStrategy.isRun = False;
             self.shutdownTimer.stop();
             self.processCounter.stop();
+
+            if self.gbMyAccount.uValue1.currentData() != "":
+                telegramMsg  = "#{0}\r\n".format(datetime.datetime.now());
+                telegramMsg += "<strong>{0}:자동매매</strong>가 종료되었습니다.\r\n".format(self.userInfo.userName);
+                telegramMsg += "<strong>수익보고</strong>\r\n";
+                telegramMsg += "-계좌:{0}\r\n".format(self.gbMyAccount.vTotalProfit.text());
+                telegramMsg += "-당일:{0}".format(self.gbMyAccount.vTodayProfit.text());
+                asyncio.run(self.sendMessage(telegramMsg));
+            
             self.close();
         
     #자식창 팝업 슬롯
@@ -379,7 +412,7 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
             self.gbMyAccount.clear();
             self.sendConditionStop("8000", self.cbConUp.currentText(), self.cbConUp.currentData());
             self.setRealClear("8000");
-    
+
     #계좌번호 변경 이벤트 슬롯
     def accountChangedSlot(self, accountNo):
         self.gbMyAccount.clear("account");
@@ -575,18 +608,21 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
                 
                 for idx in indexResult:
                     indexValue = float(idx["sField03"]);
+                    indexRate  = float(idx["sField07"]);
                     if idx["sField01"] == "001":#업종(001:코스피, 101:코스닥)
-                        indexColor = "color:blue;" if indexValue < 0 else "color:red";
+                        indexColor = "color:blue;"  if indexRate  < 0 else "color:red";
+                        indexColor = "color:black;" if indexRate == 0 else indexColor;
                         self.gbMyAccount.vKospi.setStyleSheet(indexColor);
                         self.gbMyAccount.vKospi.setText("{0:,.2f}".format(abs(indexValue)));
                         self.gbMyAccount.vKospiRate.setStyleSheet(indexColor);
-                        self.gbMyAccount.vKospiRate.setText("{0:+.2f}".format(float(idx["sField07"])));
+                        self.gbMyAccount.vKospiRate.setText("{0:+.2f}".format(indexRate));
                     else:
-                        indexColor = "color:blue;" if indexValue < 0 else "color:red";
+                        indexColor = "color:blue;"  if indexRate  < 0 else "color:red";
+                        indexColor = "color:black;" if indexRate == 0 else indexColor;
                         self.gbMyAccount.vKosdaq.setStyleSheet(indexColor);
                         self.gbMyAccount.vKosdaq.setText("{0:,.2f}".format(abs(indexValue)));
                         self.gbMyAccount.vKosdaqRate.setStyleSheet(indexColor);
-                        self.gbMyAccount.vKosdaqRate.setText("{0:+.2f}".format(float(idx["sField07"])));
+                        self.gbMyAccount.vKosdaqRate.setText("{0:+.2f}".format(indexRate));
             else:
                 if type(accountInfo) == int:
                     QtWidgets.QMessageBox.warning(self, "경고", self.getErrMsg(-10003 if accountInfo == -202 else accountInfo));
@@ -653,18 +689,21 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
             #obj["f11"];#업종 등락값
             #obj["f12"];#업종 등락비율
             indexValue = float(obj["f17"]);
+            indexRate  = float(obj["f12"]);
             if obj["stockCode"] == "001":#업종(001:코스피, 101:코스닥)
-                indexColor = "color:blue;" if indexValue < 0 else "color:red";
+                indexColor = "color:blue;"  if indexRate  < 0 else "color:red";
+                indexColor = "color:black;" if indexRate == 0 else indexColor;
                 self.gbMyAccount.vKospi.setStyleSheet(indexColor);
                 self.gbMyAccount.vKospi.setText("{0:,.2f}".format(abs(indexValue)));
                 self.gbMyAccount.vKospiRate.setStyleSheet(indexColor);
-                self.gbMyAccount.vKospiRate.setText("{0:+.2f}".format(float(obj["f12"])));
+                self.gbMyAccount.vKospiRate.setText("{0:+.2f}".format(indexRate));
             else:
-                indexColor = "color:blue;" if indexValue < 0 else "color:red";
+                indexColor = "color:blue;"  if indexRate  < 0 else "color:red";
+                indexColor = "color:black;" if indexRate == 0 else indexColor;
                 self.gbMyAccount.vKosdaq.setStyleSheet(indexColor);
                 self.gbMyAccount.vKosdaq.setText("{0:,.2f}".format(abs(indexValue)));
                 self.gbMyAccount.vKosdaqRate.setStyleSheet(indexColor);
-                self.gbMyAccount.vKosdaqRate.setText("{0:+.2f}".format(float(obj["f12"])));
+                self.gbMyAccount.vKosdaqRate.setText("{0:+.2f}".format(indexRate));
 
         elif obj["sRealType"] == "장시작시간":
             #f215( 8, 9 같은 경우 시간이 888888, 999999 이런식으로 오기도 한다.. datetime못쓰것네.. )
@@ -821,13 +860,15 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
                     3012: TrailingStop(매도) 수익달성,
                     3013: TrailingStop(매도) 수익보존,
                     3014: TrailingStop(매도) 손실 전량매도,
+                    3015: TrailingStop(매도) 수익달성 이후 매도비율 높을경우 전량 매도,
+                    3016: TrailingStop(매도) 추가매수 반등 수수료 전량매도,
                     3022: StopLoss(매도) 수익달성,
                     3023: StopLoss(매도) 손실 전량매도,
                     """
                     #개발사항: 매도 취소시..  전략부분 원복... 근디.. 수익 매도인지, 손실매도인지 모르는디.. 어떻게 확인 처리하지??
-                    if chejan["screenNo"] in ["3012", "3013", "3014", "3022", "3023"]:
+                    if chejan["screenNo"] in ["3012", "3013", "3014", "3015", "3016", "3022", "3023"]:
                         myStrategy = self.appSettings.myStrategy[chejan["stockCode"]];
-                        if chejan["screenNo"] in ["3012", "3013", "3014"]:
+                        if chejan["screenNo"] in ["3012", "3013", "3014", "3015", "3016"]:
                             myStrategy["tsDivSell"] -= 1;
                         else:
                             myStrategy["slDivSell"] -= 1;
@@ -1036,7 +1077,7 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
                 self.sendConditionStop("8000", self.cbConUp.currentText(), self.cbConUp.currentData());
                 self.setRealClear("8000");
                 self.myStrategy.conStrategy.clear();
-                asyncio.run(self.sendMessage("#{0}\r\n<strong>자동매매</strong>가 중지되었습니다.".format(datetime.datetime.now())));
+                asyncio.run(self.sendMessage("#{0}\r\n<strong>{1}:자동매매</strong>가 중지되었습니다.".format(datetime.datetime.now(), self.userInfo.userName)));
         else:
             #자동매매가 정지중일 경우
             if self.gbMyAccount.uValue1.currentData() == "":
@@ -1080,7 +1121,7 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
                             });
                     
                         self.twConStocks.addRows(addRows);
-                    asyncio.run(self.sendMessage("#{0}\r\n<strong>자동매매</strong>가 시작되었습니다.".format(datetime.datetime.now())));
+                    asyncio.run(self.sendMessage("#{0}\r\n<strong>{1}:자동매매</strong>가 시작되었습니다.".format(datetime.datetime.now(), self.userInfo.userName)));
                 else:
                     QtWidgets.QMessageBox.warning(self, "경고", self.getErrMsg(-10002));
         
@@ -1151,10 +1192,10 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
     #조건검색 항목 편입/탈락 처리
     def conInOutSlot(self, obj):
         if obj["type"] == "D":#종목이탈
-            #분석을 위해 계속 검색된 항목은 계속 수신받기 때문에 삭제할 필요가 없음
-            #self.twConStocks.delRows(obj["stockCode"]);#실시간 수신 해지는 KiwoomAPI에서 처리함
-            #시간이 지날수록 실시간 정보 수신 받는 종목이 늘어나면서.. 부하가 커지네..(이탈 기준을 따로 만들어야 할꺼 같음)
             pass;
+        #    self.twConStocks.delRows(obj["stockCode"]);#실시간 수신 해지는 KiwoomAPI에서 처리함
+        #    if obj["stockCode"] in self.appSettings.myStrategy:
+        #        del(self.appSettings.myStrategy[obj["stockCode"]]);
     
     #처리내역 & 상태바에 프로그램 메세지를 출력
     def addConsoleSlot(self, obj):
@@ -1216,7 +1257,7 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
                     self.appSettings.sync();
                     if self.gbMyAccount.uValue1.currentData() != "":
                         telegramMsg  = "#{0}\r\n".format(datetime.datetime.now());
-                        telegramMsg += "<strong>자동매매</strong>가 종료되었습니다.\r\n".format(datetime.datetime.now());
+                        telegramMsg += "<strong>{0}:자동매매</strong>가 종료되었습니다.\r\n".format(self.userInfo.userName);
                         telegramMsg += "<strong>수익보고</strong>\r\n";
                         telegramMsg += "-계좌:{0}\r\n".format(self.gbMyAccount.vTotalProfit.text());
                         telegramMsg += "-당일:{0}".format(self.gbMyAccount.vTodayProfit.text());
@@ -1227,13 +1268,6 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
             else:
                 #속도가 너무 느려.. 종료시에만 저장하도록 수정
                 self.appSettings.sync();
-                if self.gbMyAccount.uValue1.currentData() != "":
-                    telegramMsg  = "#{0}\r\n".format(datetime.datetime.now());
-                    telegramMsg += "<strong>자동매매</strong>가 종료되었습니다.\r\n".format(datetime.datetime.now());
-                    telegramMsg += "<strong>수익보고</strong>\r\n";
-                    telegramMsg += "-계좌:{0}\r\n".format(self.gbMyAccount.vTotalProfit.text());
-                    telegramMsg += "-당일:{0}".format(self.gbMyAccount.vTodayProfit.text());
-                    asyncio.run(self.sendMessage(telegramMsg));
                 self.close();
         except Exception as e:
             print(e);
@@ -1348,18 +1382,19 @@ def testLogFile(obj, ext={}, vOrderableAmount=""):
 if __name__ == "__main__":
     ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("mycompany.myproduct.subproduct.version");#임의의 명칭을 사용해도 됨
     os.environ["QT_FONT_DPI"] = "97";
+    
     app = QtWidgets.QApplication(sys.argv);
     app.setWindowIcon(QtGui.QIcon(resource_path("resources/iconTrading.png")));
 
     argv   = sys.argv[1:];
     kwargs = {kw[0] : kw[1] for kw in [ar.split('=') for ar in argv if ar.find('=') > 0]};
     args   = [arg for arg in argv if arg.find('=') < 0];
-
+    
     try:
         main = Main(*args, **kwargs);
         main.show();
         sys.exit(app.exec_());
-            
+    
     except NotInsallOpenAPI as notIns:
         QtWidgets.QMessageBox.warning(None, "경고", notIns.message);
     except Exception as e:
