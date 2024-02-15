@@ -154,7 +154,8 @@ class InfiniteStrategy(AbstractStrategy):
         myStrategy = self.myStrategy[obj["f9001"]]           \
                      if obj["f9001"] in self.myStrategy else \
                      None;
-        
+        conStrategy = self.conStrategy[obj["f9001"]];
+
         if myStrategy == None:
             return;
     
@@ -179,7 +180,7 @@ class InfiniteStrategy(AbstractStrategy):
                         "sCode"     : myStock["stockCode"],
                         "nQty"      : orderCount,
                         "nPrice"    : nowPrice,
-                        "reason"    : "TrailingStop 목표가 달성매도 momentSell:({0})".format(myStrategy["momentSell"]),
+                        "reason"    : "TrailingStop 목표가 달성매도 momentSell:({0})".format(conStrategy["momentSell"]),
                     }, myStock);
 
                     if result != 0:
@@ -207,7 +208,7 @@ class InfiniteStrategy(AbstractStrategy):
                             "sCode"     : myStock["stockCode"    ],
                             "nQty"      : myStock["reminingCount"],
                             "nPrice"    : nowPrice,
-                            "reason"    : "TrailingStop 수익보존 매도 momentSell:({0})".format(myStrategy["momentSell"]),
+                            "reason"    : "TrailingStop 수익보존 매도 momentSell:({0})".format(conStrategy["momentSell"]),
                         }, myStock);
 
                         if result != 0:
@@ -219,7 +220,7 @@ class InfiniteStrategy(AbstractStrategy):
                             #취소 주문 내역이 없다면 취소주문
                             self.orderCancel(chejan);
             
-            elif myStrategy.get("momentSell", 0) > 63:
+            elif conStrategy.get("momentSell", 0) > 63:
                 #수익율 달성이후 최근 매도비율 68% 초과시 전량 매도
 
                 ##해당 종목이 기존에 매도가 걸려 있다면.. 주문 취소(어떻게 주문취소가 끝난 이후를 알 수 있을까?)
@@ -241,7 +242,7 @@ class InfiniteStrategy(AbstractStrategy):
                             "sCode"     : myStock["stockCode"    ],
                             "nQty"      : myStock["reminingCount"],
                             "nPrice"    : nowPrice,
-                            "reason"    : "TrailingStop 현재 매도비율 {0}% 초과 수익보존 매도".format(myStrategy["momentSell"]),
+                            "reason"    : "TrailingStop 현재 매도비율 {0}% 초과 수익보존 매도".format(conStrategy["momentSell"]),
                         }, myStock);
 
                         if result != 0:
