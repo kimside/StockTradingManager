@@ -835,11 +835,14 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
                     """
                     #개발사항: 매수 취소시..  전략부분 원복... 근디.. 최초 매수인지, 추가매수인지 모르는디.. 어떻게 확인 처리하지??
                     if chejan["screenNo"] == ["3011", "3021"]:
-                        myStrategy = self.appSettings.myStrategy[chejan["stockCode"]];
-                        if chejan["screenNo"] == "3011":
-                            myStrategy["tsAddBuy"] -= 1;
-                        else:
-                            myStrategy["slAddBuy"] -= 1;
+                        if chejan["stockCode"] in self.appSettings.myStrategy:
+                            myStrategy = self.appSettings.myStrategy[chejan["stockCode"]];
+                            if chejan["screenNo"] == "3011":
+                                myStrategy["tsAddBuy"] -= 1;
+                                self.appSettings.myStrategy[chejan["stockCode"]] = myStrategy;
+                            else:
+                                myStrategy["slAddBuy"] -= 1;
+                                self.appSettings.myStrategy[chejan["stockCode"]] = myStrategy;
                     
                     #원주문번호를 찾아 해당 주문건을 삭제한다.
                     self.twChejanStocks.delRows(chejan["oriOrderNo"]);
@@ -867,11 +870,14 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
                     """
                     #개발사항: 매도 취소시..  전략부분 원복... 근디.. 수익 매도인지, 손실매도인지 모르는디.. 어떻게 확인 처리하지??
                     if chejan["screenNo"] in ["3012", "3013", "3014", "3015", "3016", "3022", "3023"]:
-                        myStrategy = self.appSettings.myStrategy[chejan["stockCode"]];
-                        if chejan["screenNo"] in ["3012", "3013", "3014", "3015", "3016"]:
-                            myStrategy["tsDivSell"] -= 1;
-                        else:
-                            myStrategy["slDivSell"] -= 1;
+                        if chejan["stockCode"] in self.appSettings.myStrategy:
+                            myStrategy = self.appSettings.myStrategy[chejan["stockCode"]];
+                            if chejan["screenNo"] in ["3012", "3013", "3014", "3015", "3016"]:
+                                myStrategy["tsDivSell"] -= 1;
+                                self.appSettings.myStrategy[chejan["stockCode"]] = myStrategy;
+                            else:
+                                myStrategy["slDivSell"] -= 1;
+                                self.appSettings.myStrategy[chejan["stockCode"]] = myStrategy;
                     
                     #계좌 보유주식 주문가능수량 업데이트(부분 체결이 되었을수도 있기에..  확인해야한다.)
                     myStocks = self.twMyStocks.getRowDatas(chejan["stockCode"]);
@@ -965,7 +971,7 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
                             self.twMyStocks.addRows(myStock);
                         else:
                             #잔고수량 - 체결수량 == 0이라면.. 계좌정보에서 해당 종목삭제 아니라면 업데이트
-                            reminingCount = myStock["stockCount"] - int(chejan["unitCount"] if chejan["unitCount"] != "" else chejan["orderCount"]);
+                            reminingCount = myStock["stockCount"] - int(chejan["unitCount"] if chejan.get("unitCount", "") != "" else chejan["orderCount"]);
                             if reminingCount == 0:
                                 self.twMyStocks.delRows(chejan["stockCode"]);
                                 self.setRealRemove("4000", chejan["stockCode"]);
@@ -1214,6 +1220,20 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
         sMsg.append("{0},".format(obj["sRQName"].strip() if obj["sRQName"] != "" else obj["sTrCode"].strip()));
         sMsg.append("{0}".format(obj["sMsg"].strip()));
         self.statusbar.showMessage("".join(sMsg), 5000);
+        
+        """
+        #kiwoom서버에서 수신된 내용이 (매수/매도에대해서 오류 내용이라면... 전략의 addBuy, addSell 항목의 숫자를 -1만큼 줄임)
+        if "[" in obj["sRQName"] and "]" in obj["sRQName"]:
+            stockCode = obj["sRQName"][obj["sRQName"].index("[")+1:obj["sRQName"].index("]")];
+            
+            myStrategy = self.appSettings.myStrategy[stockCode];
+            if chejan["screenNo"] in ["3012", "3013", "3014", "3015", "3016"]:
+                myStrategy["tsDivSell"] -= 1;
+                self.appSettings.myStrategy[chejan["stockCode"]] = myStrategy;
+            else:
+                myStrategy["slDivSell"] -= 1;
+                self.appSettings.myStrategy[chejan["stockCode"]] = myStrategy;
+        """
 
         #console출력 내용 log파일로 저장
         msg.append("\n");
