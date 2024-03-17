@@ -275,8 +275,8 @@ class InfiniteStrategy(AbstractStrategy):
                     if result != 0:
                         myStrategy["tsDivSell"] -= 1;
             
-            elif int(myStrategy["averagePrice"] / nowPrice * 100) > 100 - self.tsLossRate:
-                #현재가가 대비 평단가 비율이 추가매수 비율보다 낮다면 보유수량 2배 추가매수(매수가능 금액이 부족하다면 가능한 금액만큼만 매수)
+            elif int(myStrategy["averagePrice"] / nowPrice * 100) > 100 - self.tsLossRate and conStrategy.get("momentSell", 0) < 30:
+                #현재가가 대비 평단가 비율이 추가매수 비율보다 낮고 매도비율이 30%이하라면 보유수량 2배 추가매수(매수가능 금액이 부족하다면 가능한 금액만큼만 매수)
                 if self.tsDivBuyActive:
                     if len(self.parent.twChejanStocks.getRowDatas(myStock["stockCode"])) == 0:
                         order = self.getBuyCount({
