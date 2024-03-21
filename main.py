@@ -511,7 +511,7 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
 
                 #내 계좌정보에 보유 주식 넣기
                 for idx, value in enumerate(accountInfo.__getitem__("mField01")):
-                    if value != "" or int(accountInfo.__getitem__("mField03")[idx]) != 0:
+                    if value != "" and accountInfo.__getitem__("mField01")[idx][0] != "J":
                         myStock = self.calcStock({
                             "stockCode"    : accountInfo.__getitem__("mField01")[idx],
                             "stockName"    : accountInfo.__getitem__("mField02")[idx],
