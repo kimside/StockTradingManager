@@ -511,7 +511,7 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
 
                 #내 계좌정보에 보유 주식 넣기
                 for idx, value in enumerate(accountInfo.__getitem__("mField01")):
-                    if value != "":
+                    if value != "" or int(accountInfo.__getitem__("mField03")[idx]) != 0:
                         myStock = self.calcStock({
                             "stockCode"    : accountInfo.__getitem__("mField01")[idx],
                             "stockName"    : accountInfo.__getitem__("mField02")[idx],
@@ -1044,7 +1044,7 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
         nowAmount      = nowAmount - sellTax - tax;
         breakEvenPrice = float(stockInfo["averagePrice"]) + int((buyTax + sellTax + tax) / int(stockInfo["stockCount"]));
         profit         = nowAmount - buyAmount;
-        profitRate     = round((nowAmount - buyAmount) / (buyAmount if buyAmount != 0 else 1) * 100, 2);
+        profitRate     = round((nowAmount - buyAmount) / buyAmount * 100, 2);
         
         return {
             "stockCode"     : stockInfo["stockCode"][-6:],
