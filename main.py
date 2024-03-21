@@ -1044,7 +1044,7 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
         nowAmount      = nowAmount - sellTax - tax;
         breakEvenPrice = float(stockInfo["averagePrice"]) + int((buyTax + sellTax + tax) / int(stockInfo["stockCount"]));
         profit         = nowAmount - buyAmount;
-        profitRate     = round((nowAmount - buyAmount) / buyAmount * 100, 2);
+        profitRate     = round((nowAmount - buyAmount) / (buyAmount if buyAmount != 0 else 1) * 100, 2);
         
         return {
             "stockCode"     : stockInfo["stockCode"][-6:],
