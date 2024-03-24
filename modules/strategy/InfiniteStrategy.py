@@ -58,11 +58,13 @@ class InfiniteStrategy(AbstractStrategy):
                 #계좌보유주식 목록에 없음
                 #순간체결강도 집계 목록이 30개 넘음
                 #순간체결강도가 150이상
+                #매도비율이 30%보다 낮다면
                 if not (obj["f9001"], obj["f302"]) in self.appSettings.orderList \
                     and len(self.appSettings.orderList) <= self.tradeMaxCount    \
                     and self.parent.twMyStocks.isExist(obj["f9001"]) == None     \
                     and len(thisStrategy["momentList"]) > 50                     \
-                    and thisStrategy["momentStrength"]  > 150:
+                    and thisStrategy.get("momentStrength", 0)  > 150             \
+                    and thisStrategy.get("momentSell", 0) < 30:
                     
                     order = self.getBuyCount({
                         "sScrNo"    : "3001",
