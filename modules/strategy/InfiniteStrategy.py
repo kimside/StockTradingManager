@@ -223,7 +223,7 @@ class InfiniteStrategy(AbstractStrategy):
                             self.orderCancel(chejan);
             
             elif conStrategy.get("momentSell", 0) > 63:
-                #수익율 달성이후 최근 매도비율 68% 초과시 전량 매도
+                #수익율 달성이후 최근 매도비율 63% 초과시 전량 매도
 
                 ##해당 종목이 기존에 매도가 걸려 있다면.. 주문 취소(어떻게 주문취소가 끝난 이후를 알 수 있을까?)
                 ##1. twMyStocks에 보유갯수랑, 가능갯수가 같은지 확인
@@ -258,8 +258,8 @@ class InfiniteStrategy(AbstractStrategy):
         
         else:
             #목표 수익율 미진입
-            if myStrategy["tsAddBuy"] != 0 and myStock["profitRate"] > 1:
-                #종목의 추가매수 이력이 있고, 수익율이 1%이상 반등이라면 전량매도
+            if myStrategy["tsAddBuy"] != 0 and myStock["profitRate"] > 1 and conStrategy.get("momentSell", 0) > 63:
+                #종목의 추가매수 이력이 있고, 수익율이 1%이상 반등, 매도비율 63% 초과시 전량 매도
                 if myStock["reminingCount"] > 0:
                     myStrategy["tsDivSell"] += 1;
                     #재매수 금지목록에 추가한다
