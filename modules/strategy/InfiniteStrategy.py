@@ -268,10 +268,11 @@ class InfiniteStrategy(AbstractStrategy):
                     result = self.sendOrder({
                         "sScrNo"    : "3016",
                         "nOrderType": 2,
+                        "sHogaGb"   : "03", #매도비율 63% 초과시 시장가 매도
                         "sCode"     : myStock["stockCode"    ],
                         "nQty"      : myStock["reminingCount"],
                         "nPrice"    : nowPrice,
-                        "reason"    : "TrailingStop(매도) 추가매수 반등 수수료 전량매도"
+                        "reason"    : "TrailingStop(매도) 추가매수 반등 수수료 전량매도, 현재 매도비율{0}%".format(conStrategy.get("momentSell", 0)),
                     }, myStock);
 
                     if result != 0:
