@@ -165,8 +165,8 @@ class InfiniteStrategy(AbstractStrategy):
         result   = -1;
 
         if myStrategy["tsActive"]:
-            #목표 수익율 진입
-            if myStrategy["tsDivSell"] < 1:
+            #목표 수익율 진입, 매도비율이 63%이상이라면 분할매도
+            if myStrategy["tsDivSell"] < 1 and conStrategy.get("momentSell", 0) > 63:
                 #현재 수익율이 목표수익율 달성시 최초 분할매도
                 orderCount = int(myStock["reminingCount"] * self.tsDivRate / 100);
                 orderCount = myStock["reminingCount"] \
@@ -179,6 +179,7 @@ class InfiniteStrategy(AbstractStrategy):
                     result = self.sendOrder({
                         "sScrNo"    : "3012",
                         "nOrderType": 2,
+                        "sHogaGb"   : "03", #시장가 매도
                         "sCode"     : myStock["stockCode"],
                         "nQty"      : orderCount,
                         "nPrice"    : nowPrice,
@@ -206,7 +207,7 @@ class InfiniteStrategy(AbstractStrategy):
                         result = self.sendOrder({
                             "sScrNo"    : "3013",
                             "nOrderType": 2,
-                            "sHogaGb"   : "03", #수익보존율 보다 낮을 경우 시장가 매도
+                            "sHogaGb"   : "03", #시장가 매도
                             "sCode"     : myStock["stockCode"    ],
                             "nQty"      : myStock["reminingCount"],
                             "nPrice"    : nowPrice,
@@ -240,7 +241,7 @@ class InfiniteStrategy(AbstractStrategy):
                         result = self.sendOrder({
                             "sScrNo"    : "3015",
                             "nOrderType": 2,
-                            "sHogaGb"   : "03", #매도비율 63% 초과시 시장가 매도
+                            "sHogaGb"   : "03", #시장가 매도
                             "sCode"     : myStock["stockCode"    ],
                             "nQty"      : myStock["reminingCount"],
                             "nPrice"    : nowPrice,
@@ -268,7 +269,7 @@ class InfiniteStrategy(AbstractStrategy):
                     result = self.sendOrder({
                         "sScrNo"    : "3016",
                         "nOrderType": 2,
-                        "sHogaGb"   : "03", #매도비율 63% 초과시 시장가 매도
+                        "sHogaGb"   : "03", #시장가 매도
                         "sCode"     : myStock["stockCode"    ],
                         "nQty"      : myStock["reminingCount"],
                         "nPrice"    : nowPrice,
