@@ -188,8 +188,8 @@ class InfiniteStrategy(AbstractStrategy):
                     if result != 0:
                         myStrategy["tsDivSell"] = 0;
             
-            #분할매도가 되어 있고, 현재 수익율이 +상태이며, 수익율이 보존수익율 보다 낮아진다면 수익율 보존 매도
-            elif myStrategy["tsDivSell"] > 0 and myStock["profitRate"] > 0 and self.tsProfitRate / self.tsServeRate * 100 > myStock["profitRate"]:
+            #분할매도가 되어 있고, 현재 수익율이 +상태이며, 수익율이 보존수익율 보다 낮고, 매도비율이 63%이상이라면 수익율 보존 매도
+            elif myStrategy["tsDivSell"] > 0 and myStock["profitRate"] > 0 and self.tsProfitRate / self.tsServeRate * 100 > myStock["profitRate"] and conStrategy.get("momentSell", 0) > 63:
                 #고점대비 현재가가 수익보존율 보다 낮다면 전량매도
 
                 ##해당 종목이 기존에 매도가 걸려 있다면.. 주문 취소(어떻게 주문취소가 끝난 이후를 알 수 있을까?)
