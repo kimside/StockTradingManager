@@ -833,7 +833,7 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
                     3011: TrailingStop(매수) 손실 추가매수,
                     3021: StopLoss(매수) 손실 추가매수,
                     """
-                    #개발사항: 매수 취소시..  전략부분 원복... 근디.. 최초 매수인지, 추가매수인지 모르는디.. 어떻게 확인 처리하지??
+                    #개발사항: 매수 취소시..  전략부분 원복...
                     if chejan["screenNo"] == ["3011", "3021"]:
                         if chejan["stockCode"] in self.appSettings.myStrategy:
                             myStrategy = self.appSettings.myStrategy[chejan["stockCode"]];
@@ -900,6 +900,14 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
                         ),
                     });
                 elif chejan["hogaGb"] in ["+매수", "-매도"]:
+                    #주문 큐에서 해당 내역 삭제
+                    if "+매수" == chejan["hogaGb"]:
+                        if (chejan["stockCode"], 1) in self.myStrategy.orderQueue:
+                            self.myStrategy.orderQueue.remove((chejan["stockCode"], 1));
+                    elif "-매도" == chejan["hogaGb"]:
+                        if (chejan["stockCode"], 2) in self.myStrategy.orderQueue:
+                            self.myStrategy.orderQueue.remove((chejan["stockCode"], 2));
+
                     if not chejan["orderNo"] in self.twChejanHisStocks.getColumnDatas("oriOrderNo"):
                         self.addConsoleSlot({
                             "sRQName": orderScrNoName,
@@ -1221,19 +1229,14 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
         sMsg.append("{0}".format(obj["sMsg"].strip()));
         self.statusbar.showMessage("".join(sMsg), 5000);
         
-        """
-        #kiwoom서버에서 수신된 내용이 (매수/매도에대해서 오류 내용이라면... 전략의 addBuy, addSell 항목의 숫자를 -1만큼 줄임)
-        if "[" in obj["sRQName"] and "]" in obj["sRQName"]:
-            stockCode = obj["sRQName"][obj["sRQName"].index("[")+1:obj["sRQName"].index("]")];
+        if "(" in obj["sRQName"] and ")" in obj["sRQName"]:
+            stockCode = obj["sRQName"][obj["sRQName"].index("(")+1:obj["sRQName"].index(")")];
             
-            myStrategy = self.appSettings.myStrategy[stockCode];
-            if chejan["screenNo"] in ["3012", "3013", "3014", "3015", "3016"]:
-                myStrategy["tsDivSell"] -= 1;
-                self.appSettings.myStrategy[chejan["stockCode"]] = myStrategy;
-            else:
-                myStrategy["slDivSell"] -= 1;
-                self.appSettings.myStrategy[chejan["stockCode"]] = myStrategy;
-        """
+            #주문 큐에서 해당 내역 삭제
+            if (stockCode, 1) in self.myStrategy.orderQueue:
+                self.myStrategy.orderQueue.remove((stockCode, 1));
+            if (stockCode, 2) in self.myStrategy.orderQueue:
+                self.myStrategy.orderQueue.remove((stockCode, 2));
 
         #console출력 내용 log파일로 저장
         msg.append("\n");

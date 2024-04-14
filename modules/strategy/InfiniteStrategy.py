@@ -41,7 +41,11 @@ class InfiniteStrategy(AbstractStrategy):
 
         #조건검색 결과 전략분석
         self.conStrategy = {};
-        #보유주식 계좌 전략분석
+        
+        #매수/매도 요청 목록
+        #(매수/매도 주문시 서버로 부터 응답을 받기 전에 실시간 처리로직으로 부터 주문이 중복으로 처리될 경우가 있어,
+        # 접수데이터 수신이전에는 주문신청은 내부적으로 별도 관리를 해야한다, 접수데이터 수신시 해당 데이터는 삭제처리...)
+        self.orderQueue = set([]);
     
     #매수전략
     def buyStrategy(self, obj):
@@ -444,63 +448,73 @@ class InfiniteStrategy(AbstractStrategy):
     #주문신청
     def sendOrder(self, order, stock):
         result = -1;
+        #주문수량이 0개 이상
         if order["nQty"] > 0:
-            if order["nOrderType"] == 2:
-                #매도주문
-                stock["reminingCount"] -= int(order["nQty"]);
-                self.parent.twMyStocks.addRows(stock)
-                
-                result = self.parent.sendOrder({
-                    "sRQName"   : "{0}({1})".format(stock["stockName"], stock["stockCode"]),
-                    "sAccNo"    : self.parent.gbMyAccount.uValue1.currentData(),
-                    "sScrNo"    : order["sScrNo"    ],                                              #화면번호
-                    "nOrderType": order["nOrderType"],                                              #주문유형 1:신규매수, 2:신규매도 3:매수취소, 4:매도취소, 5:매수정정, 6:매도정정
-                    "sHogaGb"   : order.get("sHogaGb", "00"),                                       #거래구분(sHogaGb) 00: 지정가, 03: 시장가
-                    "sCode"     : order["sCode"     ],                                              #종목코드
-                    "nQty"      : order["nQty"      ],                                              #주문수량
-                    "nPrice"    : order["nPrice"    ] if order.get("sHogaGb", "00") == "00" else 0, #주문가격
-                    "reason"    : order["reason"    ],                                              #주문사유
-                });
-
-                #chejanSignalSlot처리하려고 했는데.. QTableWidget갱신에 시간이 오래 걸리면 무한 매도 주문이 나가서 서버랑 연결이 끊어짐..
-                #매도시.. 주문가능수량 갱신은.. 매도 주문 넣으면서..(취소 주문 넣을때는.. 전략에서 다시 주문가능수량 갱신해야 함)
-                if result != 0:
-                    stock["reminingCount"] += int(order["nQty"]);
-                    self.parent.twMyStocks.addRows(stock);
-                
-            elif order["nOrderType"] == 1:
-                #매수주문
-                result = self.parent.sendOrder({
-                    "sRQName"   : "{0}({1})".format(stock["stockName"], stock["stockCode"]),
-                    "sAccNo"    : self.parent.gbMyAccount.uValue1.currentData(),
-                    "sScrNo"    : order["sScrNo"    ],                                              #화면번호
-                    "nOrderType": order["nOrderType"],                                              #주문유형 1:신규매수, 2:신규매도 3:매수취소, 4:매도취소, 5:매수정정, 6:매도정정
-                    "sHogaGb"   : order.get("sHogaGb", "00"),                                       #거래구분(sHogaGb) 00: 지정가, 03: 시장가
-                    "sCode"     : order["sCode"     ],                                              #종목코드
-                    "nQty"      : order["nQty"      ],                                              #주문수량
-                    "nPrice"    : order["nPrice"    ] if order.get("sHogaGb", "00") == "00" else 0, #주문가격
-                    "reason"    : order["reason"    ],                                              #주문사유
-                });
-
-            elif order["nOrderType"] in [3, 4]:
-                #매수취소(3), #매도취소(4)
-                #취소항목은 addChejanSlot에서 완료 메세지를 받으면 그때 처리하자....
+            #주문 내역에 존재하지 않는다면 주문 신청
+            if not (stock["stockCode"], order["nOrderType"]) in self.orderQueue:
+                if order["nOrderType"] == 2:
+                    #매도주문
+                    stock["reminingCount"] -= int(order["nQty"]);
+                    self.parent.twMyStocks.addRows(stock)
                     
-                result = self.parent.sendOrder({
-                    "sRQName"    : "{0}({1})".format(stock["stockName"], stock["stockCode"]),
-                    "sAccNo"     : self.parent.gbMyAccount.uValue1.currentData(),
-                    "nOrderType" : order["nOrderType" ],#주문유형 1:신규매수, 2:신규매도 3:매수취소, 4:매도취소, 5:매수정정, 6:매도정정
-                    "sScrNo"     : order["sScrNo"     ],#화면번호
-                    "sCode"      : order["sCode"      ],#종목코드
-                    "nQty"       : order["nQty"       ],#주문수량
-                    "nPrice"     : order["nPrice"     ],#주문가격
-                    "reason"     : order["reason"     ],#주문사유
-                    "sOrgOrderNo": order["sOrgOrderNo"],#원주문번호
-                });
-            
-            elif result == -308:
-                time.sleep(0.25);
-            
+                    result = self.parent.sendOrder({
+                        "sRQName"   : "{0}({1})".format(stock["stockName"], stock["stockCode"]),
+                        "sAccNo"    : self.parent.gbMyAccount.uValue1.currentData(),
+                        "sScrNo"    : order["sScrNo"    ],                                              #화면번호
+                        "nOrderType": order["nOrderType"],                                              #주문유형 1:신규매수, 2:신규매도 3:매수취소, 4:매도취소, 5:매수정정, 6:매도정정
+                        "sHogaGb"   : order.get("sHogaGb", "00"),                                       #거래구분(sHogaGb) 00: 지정가, 03: 시장가
+                        "sCode"     : order["sCode"     ],                                              #종목코드
+                        "nQty"      : order["nQty"      ],                                              #주문수량
+                        "nPrice"    : order["nPrice"    ] if order.get("sHogaGb", "00") == "00" else 0, #주문가격
+                        "reason"    : order["reason"    ],                                              #주문사유
+                    });
+                    self.orderQueue.add((stock["stockCode"], order["nOrderType"]));
+
+                    #chejanSignalSlot처리하려고 했는데.. QTableWidget갱신에 시간이 오래 걸리면 무한 매도 주문이 나가서 서버랑 연결이 끊어짐..
+                    #매도시.. 주문가능수량 갱신은.. 매도 주문 넣으면서..(취소 주문 넣을때는.. 전략에서 다시 주문가능수량 갱신해야 함)
+                    if result != 0:
+                        stock["reminingCount"] += int(order["nQty"]);
+                        self.parent.twMyStocks.addRows(stock);
+                        self.orderQueue.remove((stock["stockCode"], order["nOrderType"]));
+                    
+                elif order["nOrderType"] == 1:
+                    #매수주문
+                    result = self.parent.sendOrder({
+                        "sRQName"   : "{0}({1})".format(stock["stockName"], stock["stockCode"]),
+                        "sAccNo"    : self.parent.gbMyAccount.uValue1.currentData(),
+                        "sScrNo"    : order["sScrNo"    ],                                              #화면번호
+                        "nOrderType": order["nOrderType"],                                              #주문유형 1:신규매수, 2:신규매도 3:매수취소, 4:매도취소, 5:매수정정, 6:매도정정
+                        "sHogaGb"   : order.get("sHogaGb", "00"),                                       #거래구분(sHogaGb) 00: 지정가, 03: 시장가
+                        "sCode"     : order["sCode"     ],                                              #종목코드
+                        "nQty"      : order["nQty"      ],                                              #주문수량
+                        "nPrice"    : order["nPrice"    ] if order.get("sHogaGb", "00") == "00" else 0, #주문가격
+                        "reason"    : order["reason"    ],                                              #주문사유
+                    });
+                    self.orderQueue.add((stock["stockCode"], order["nOrderType"]));
+
+                    if result != 0:
+                        self.orderQueue.remove((stock["stockCode"], order["nOrderType"]));
+
+                elif order["nOrderType"] in [3, 4]:
+                    #매수취소(3), #매도취소(4)
+                    #취소항목은 addChejanSlot에서 완료 메세지를 받으면 그때 처리하자....
+                        
+                    result = self.parent.sendOrder({
+                        "sRQName"    : "{0}({1})".format(stock["stockName"], stock["stockCode"]),
+                        "sAccNo"     : self.parent.gbMyAccount.uValue1.currentData(),
+                        "nOrderType" : order["nOrderType" ],#주문유형 1:신규매수, 2:신규매도 3:매수취소, 4:매도취소, 5:매수정정, 6:매도정정
+                        "sScrNo"     : order["sScrNo"     ],#화면번호
+                        "sCode"      : order["sCode"      ],#종목코드
+                        "nQty"       : order["nQty"       ],#주문수량
+                        "nPrice"     : order["nPrice"     ],#주문가격
+                        "reason"     : order["reason"     ],#주문사유
+                        "sOrgOrderNo": order["sOrgOrderNo"],#원주문번호
+                    });
+                
+                elif result == -308:
+                    time.sleep(0.25);
+            else:
+                print("기존 주문내역 존재하여 해당 주문은 스킵처리합니다.(종목: {0}({1}), 주문내역: {2}, 주문사유: {3})".format(stock["stockName"], stock["stockCode"], order["nOrderType"], order["reason"]));
             return result;
     
         else:

@@ -1,5 +1,9 @@
 import datetime, time;
 
 if __name__ == "__main__":    
-    k = {"a": {"1":"1", "2":"2"}, "b" : {"1": "1", "2": "2"}};
-    print("z" in k);
+    a = "TrailingStop(매수) 손실 추가매수";
+    
+    if "(" in a and ")" in a:
+        stockCode = a[a.index("(")+1:a.index(")")];
+        print(stockCode);
+
