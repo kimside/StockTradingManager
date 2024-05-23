@@ -183,7 +183,7 @@ class InfiniteStrategy(AbstractStrategy):
                     result = self.sendOrder({
                         "sScrNo"    : "3012",
                         "nOrderType": 2,
-                        "sHogaGb"   : "03", #시장가 매도
+                        #"sHogaGb"   : "03", #시장가 매도
                         "sCode"     : myStock["stockCode"],
                         "nQty"      : orderCount,
                         "nPrice"    : nowPrice,
@@ -211,7 +211,7 @@ class InfiniteStrategy(AbstractStrategy):
                         result = self.sendOrder({
                             "sScrNo"    : "3013",
                             "nOrderType": 2,
-                            "sHogaGb"   : "03", #시장가 매도
+                            #"sHogaGb"   : "03", #시장가 매도
                             "sCode"     : myStock["stockCode"    ],
                             "nQty"      : myStock["reminingCount"],
                             "nPrice"    : nowPrice,
@@ -245,7 +245,7 @@ class InfiniteStrategy(AbstractStrategy):
                         result = self.sendOrder({
                             "sScrNo"    : "3015",
                             "nOrderType": 2,
-                            "sHogaGb"   : "03", #시장가 매도
+                            #"sHogaGb"   : "03", #시장가 매도
                             "sCode"     : myStock["stockCode"    ],
                             "nQty"      : myStock["reminingCount"],
                             "nPrice"    : nowPrice,
@@ -273,7 +273,7 @@ class InfiniteStrategy(AbstractStrategy):
                     result = self.sendOrder({
                         "sScrNo"    : "3016",
                         "nOrderType": 2,
-                        "sHogaGb"   : "03", #시장가 매도
+                        #"sHogaGb"   : "03", #시장가 매도
                         "sCode"     : myStock["stockCode"    ],
                         "nQty"      : myStock["reminingCount"],
                         "nPrice"    : nowPrice,
@@ -315,7 +315,7 @@ class InfiniteStrategy(AbstractStrategy):
                         result = self.sendOrder({
                             "sScrNo"    : "3014",
                             "nOrderType": 2,
-                            "sHogaGb"   : "03", #시장가 매도
+                            #"sHogaGb"   : "03", #시장가 매도
                             "sCode"     : myStock["stockCode"    ],
                             "nQty"      : myStock["reminingCount"],
                             "nPrice"    : 0,
