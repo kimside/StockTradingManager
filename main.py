@@ -1,4 +1,4 @@
-import sys, os, datetime, ctypes, traceback, logging, time, telegram, asyncio;
+import sys, os, datetime, ctypes, traceback, logging, time, telegram, asyncio, exchange_calendars;
 
 from telegram.constants import ParseMode;
 
@@ -1413,12 +1413,19 @@ if __name__ == "__main__":
     kwargs = {kw[0] : kw[1] for kw in [ar.split('=') for ar in argv if ar.find('=') > 0]};
     args   = [arg for arg in argv if arg.find('=') < 0];
     
-    try:
-        main = Main(*args, **kwargs);
-        main.show();
-        sys.exit(app.exec_());
-    
-    except NotInsallOpenAPI as notIns:
-        QtWidgets.QMessageBox.warning(None, "경고", notIns.message);
-    except Exception as e:
-        traceback.print_exc();
+    XKRX = exchange_calendars.get_calendar("XKRX");
+
+    if XKRX.is_session(datetime.datetime.now().strftime("%Y-%m-%d")):
+        try:
+            main = Main(*args, **kwargs);
+            main.show();
+            sys.exit(app.exec_());
+        
+        except NotInsallOpenAPI as notIns:
+            QtWidgets.QMessageBox.warning(None, "경고", notIns.message);
+        except Exception as e:
+            traceback.print_exc();
+    else:
+        if kwargs.get("runType", "normal") == "batch":
+            turnOff = "shutdown.exe /s /t 0";
+            os.system(turnOff);
