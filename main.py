@@ -1417,7 +1417,16 @@ if __name__ == "__main__":
     runType = kwargs.get("runType", "normal");     #실행유형(batch, other)
 
     if runType == "batch" and not XKRX.is_session(datetime.datetime.now().strftime("%Y-%m-%d")):#배치 실행이면서, 휴장일이라면
-        print("오늘(" + datetime.datetime.now().strftime("%Y-%m-%d") + ")은 휴장일입니다.")
+        msg = ["[{0}]: " .format(datetime.datetime.now())];
+        msg.append("{0}, ".format(Main.preFormat("", "시스템", 32, "<")));
+        msg.append("{0}".format("오늘(" + datetime.datetime.now().strftime("%Y-%m-%d") + ")은 휴장일입니다."));
+        msg.append("\n");
+        
+        dt       = datetime.datetime.now();
+        yyyymmdd = "{0}{1:02d}{2:02d}".format(dt.year, dt.month, dt.day);
+        with open("logging/{0}/{1}.log".format(yyyymmdd, "console"), "a", encoding="UTF-8", ) as fileData:
+            fileData.write("".join(msg));
+        
         if runType == "batch":#배치로 실행한거라면 시스템 종료
             os.system("shutdown.exe /s /t 0");
         else:
@@ -1428,6 +1437,16 @@ if __name__ == "__main__":
             main.show();
             exitCode = app.exec_();
 
+            msg = ["[{0}]: " .format(datetime.datetime.now())];
+            msg.append("{0}, ".format(Main.preFormat("", "시스템", 32, "<")));
+            msg.append("{0}".format("프로그램을 종료합니다."));
+            msg.append("\n");
+
+            dt       = datetime.datetime.now();
+            yyyymmdd = "{0}{1:02d}{2:02d}".format(dt.year, dt.month, dt.day);
+            with open("logging/{0}/{1}.log".format(yyyymmdd, "console"), "a", encoding="UTF-8", ) as fileData:
+                fileData.write("".join(msg));
+            
             if runType == "batch":#배치로 실행한거라면 시스템 종료
                 os.system("shutdown.exe /s /t 30");
                 sys.exit(exitCode);
