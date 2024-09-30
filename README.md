@@ -12,6 +12,7 @@ $\bf{\color{#FF2222}(분석/차트/통계에 대한 데이터는... HTS/MTS를 �
     - https://visualstudio.microsoft.com/ko/visual-cpp-build-tools/ 다운로드 설치 (C++를 사용한 데스트톱 개발 모듈 설치) 
     - pandas(2.0.3) (pip install pandas==2.0.3)
     - numpy 2.0 이하 버전 (pip install "numpy<2.0")
+    - exchange_calendars(버전은 모름)
 
 # 필수사항
 ## Kiwoom 계좌
