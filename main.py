@@ -1413,19 +1413,28 @@ if __name__ == "__main__":
     kwargs = {kw[0] : kw[1] for kw in [ar.split('=') for ar in argv if ar.find('=') > 0]};
     args   = [arg for arg in argv if arg.find('=') < 0];
     
-    XKRX = exchange_calendars.get_calendar("XKRX");
+    XKRX = exchange_calendars.get_calendar("XKRX");#국내증시 휴장일정
+    runType = kwargs.get("runType", "normal");     #실행유형(batch, other)
 
-    if XKRX.is_session(datetime.datetime.now().strftime("%Y-%m-%d")):
+    if runType == "batch" and not XKRX.is_session(datetime.datetime.now().strftime("%Y-%m-%d")):#배치 실행이면서, 휴장일이라면
+        print("오늘(" + datetime.datetime.now().strftime("%Y-%m-%d") + ")은 휴장일입니다.")
+        if runType == "batch":#배치로 실행한거라면 시스템 종료
+            os.system("shutdown.exe /s /t 0");
+        else:
+            sys.exit(0);
+    else:
         try:
             main = Main(*args, **kwargs);
             main.show();
-            sys.exit(app.exec_());
+            exitCode = app.exec_();
+
+            if runType == "batch":#배치로 실행한거라면 시스템 종료
+                os.system("shutdown.exe /s /t 30");
+                sys.exit(exitCode);
+            else:
+                sys.exit(exitCode);
         
         except NotInsallOpenAPI as notIns:
             QtWidgets.QMessageBox.warning(None, "경고", notIns.message);
         except Exception as e:
             traceback.print_exc();
-    else:
-        if kwargs.get("runType", "normal") == "batch":
-            turnOff = "shutdown.exe /s /t 0";
-            os.system(turnOff);
