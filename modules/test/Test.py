@@ -1,9 +1,7 @@
 import datetime, time;
 
 if __name__ == "__main__":    
-    a = "TrailingStop(매수) 손실 추가매수";
+    a = {"f9001": "091234"};
     
-    if "(" in a and ")" in a:
-        stockCode = a[a.index("(")+1:a.index(")")];
-        print(stockCode);
+    print(a["f9001"].find("9") != 0);
 
