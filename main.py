@@ -24,9 +24,14 @@ from modules.test.TestCode              import TestCode, MyThread
 from modules.setting.entity.Settings    import Settings
 from modules.strategy.MyStrategy        import MyStrategy
 from modules.strategy.InfiniteStrategy  import InfiniteStrategy
+from modules.user                       import UserContext
 
-loggingDir = "logging/{0}/".format(datetime.datetime.now().strftime("%Y%m%d"))
-os.makedirs(os.path.dirname(loggingDir), exist_ok=True)
+#사용자 컨텍스트 초기화(bootstrap에서 마지막 로그인 사용자 로드, 없으면 "_default")
+#이후 키움 로그인 성공 시 isLoginSlot에서 setUserId()로 실제 사용자로 전환됨
+UserContext.init()
+
+loggingDir = UserContext.getLogDir()
+os.makedirs(loggingDir, exist_ok=True)
 logging.basicConfig(filename=loggingDir + "applicationError.log", level=logging.INFO, format='%(asctime)s %(levelname)s %(name)s %(message)s')
 logger=logging.getLogger(__name__)
 """
@@ -266,7 +271,7 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
             max = cur
             dt       = datetime.datetime.now()
             yyyymmdd = "{0}{1:02d}{2:02d}".format(dt.year, dt.month, dt.day)
-            with open("logging/{0}/{1}.log".format(yyyymmdd, "tpsHistory"), "a", encoding="UTF-8", ) as fileData:
+            with open("{0}{1}.log".format(UserContext.getLogDir(yyyymmdd), "tpsHistory"), "a", encoding="UTF-8", ) as fileData:
                 fileData.write("[{0}] TPS MAX: {1}\n".format(datetime.datetime.now(), max))
 
         self.vProcMax.setText(str(max))
@@ -377,6 +382,36 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
         self.cbConUp.setEnabled(True if self.isLogin else False)
 
         if self.isLogin:
+            #키움 로그인 성공 후 현재 프로세스의 사용자 컨텍스트를 실제 로그인 사용자로 전환한다.
+            #이전 실행과 동일한 사용자라면 setUserId()가 False를 반환해 재로드를 건너뛴다.
+            if UserContext.setUserId(self.userInfo.userId):
+                #사용자가 변경된 경우: 설정/모달/로깅 핸들러를 모두 새 사용자 경로로 재초기화한다.
+                self.appSettings.reload()
+                self.modalSetting.reload()
+
+                #기존 applicationError.log 핸들러를 제거하고 새 사용자 경로로 다시 설정
+                rootLogger = logging.getLogger()
+                for h in list(rootLogger.handlers):
+                    rootLogger.removeHandler(h)
+                    try:
+                        h.close()
+                    except Exception:
+                        pass
+                newLogDir = UserContext.getLogDir()
+                os.makedirs(newLogDir, exist_ok=True)
+                newHandler = logging.FileHandler(newLogDir + "applicationError.log")
+                newHandler.setFormatter(logging.Formatter('%(asctime)s %(levelname)s %(name)s %(message)s'))
+                rootLogger.addHandler(newHandler)
+                rootLogger.setLevel(logging.INFO)
+
+                #전략에서 참조하는 주요 설정값들도 다시 읽어온다.
+                self.vAccountPlusEndActive  = self.appSettings.vAccountPlusEndActive
+                self.vAccountPlusEnd        = self.appSettings.vAccountPlusEnd
+                self.vAccountMinusEndActive = self.appSettings.vAccountMinusEndActive
+                self.vAccountMinusEnd       = self.appSettings.vAccountMinusEnd
+                self.vDayClearActive        = self.appSettings.vDayClearActive
+                self.vRunEndTime            = self.appSettings.vRunEndTime
+
             self.gbMyAccount.setAccountInfo({
                 "uValue1": self.userInfo.accountList,
                 "uValue2": self.userInfo.userName,
@@ -1243,7 +1278,7 @@ class Main(QtWidgets.QMainWindow, KiwoomAPI, uic.loadUiType(resource_path("main.
         msg.append("\n")
         dt       = datetime.datetime.now()
         yyyymmdd = "{0}{1:02d}{2:02d}".format(dt.year, dt.month, dt.day)
-        with open("logging/{0}/{1}.log".format(yyyymmdd, "console"), "a", encoding="UTF-8", ) as fileData:
+        with open("{0}{1}.log".format(UserContext.getLogDir(yyyymmdd), "console"), "a", encoding="UTF-8", ) as fileData:
             fileData.write("".join(msg))
 
     #Splitter 크기 조절 이벤트 슬롯
@@ -1333,7 +1368,7 @@ def testLogFile(obj, ext={}, vOrderableAmount=""):
     yyyymmdd = "{0}{1:02d}{2:02d}".format(dt.year, dt.month, dt.day)
 
     if type(obj) == Opt10075:
-        with open("logging/" + yyyymmdd + "/chejanHis_" + yyyymmdd + ".log", "w", encoding="UTF-8", ) as fileData:
+        with open(UserContext.getLogDir(yyyymmdd) + "chejanHis_" + yyyymmdd + ".log", "w", encoding="UTF-8", ) as fileData:
             for index, value in enumerate(obj.__getitem__("mField15")):
                 writeText = ["계좌번호({0})"            .format(Main.preFormat("", obj.__getitem__("mField01")[index]     , 10, ">"))]  #계좌번호
                 writeText.append(", 주문번호({0})"      .format(Main.preFormat("", obj.__getitem__("mField02")[index]     ,  7, ">")))  #주문번호
@@ -1364,7 +1399,7 @@ def testLogFile(obj, ext={}, vOrderableAmount=""):
                 writeText.append("\n")
                 fileData.writelines("".join(writeText))
     elif type(obj) == Opt10077:
-        with open("logging/" + yyyymmdd + "/trade_" + yyyymmdd + ".log", "w", encoding="UTF-8", ) as fileData:
+        with open(UserContext.getLogDir(yyyymmdd) + "trade_" + yyyymmdd + ".log", "w", encoding="UTF-8", ) as fileData:
             for index, value in enumerate(obj.__getitem__("mField05")):
                 writeText = ["종목코드({0})"            .format(Main.preFormat("", obj.__getitem__("mField09")[index][-6:],  6, ">"))]  #종목코드
                 writeText.append(", 종목명({0})"        .format(Main.preFormat("", obj.__getitem__("mField01")[index]     , 30, "<")))  #종목명
@@ -1377,7 +1412,7 @@ def testLogFile(obj, ext={}, vOrderableAmount=""):
                 writeText.append("\n")
                 fileData.writelines("".join(writeText))
     else:
-        with open("logging/" + yyyymmdd + "/order/buySellPrice.log", "a", encoding="UTF-8", ) as fileData:
+        with open(UserContext.getLogDir(yyyymmdd) + "order/buySellPrice.log", "a", encoding="UTF-8", ) as fileData:
             writeText =  ["[{0}:{1}]"          .format(datetime.datetime.now(), "buySellPrice")]
             writeText.append(", 주문번호({0})"    .format(Main.preFormat("", obj["orderNo"    ]     ,  7, "<")))
             writeText.append(", 종목명({0})"      .format(Main.preFormat("", obj["stockName"  ]     , 20, "<")))
@@ -1429,7 +1464,7 @@ if __name__ == "__main__":
 
         dt       = datetime.datetime.now()
         yyyymmdd = "{0}{1:02d}{2:02d}".format(dt.year, dt.month, dt.day)
-        with open("logging/{0}/{1}.log".format(yyyymmdd, "console"), "a", encoding="UTF-8", ) as fileData:
+        with open("{0}{1}.log".format(UserContext.getLogDir(yyyymmdd), "console"), "a", encoding="UTF-8", ) as fileData:
             fileData.write("".join(msg))
 
         if runType == "batch":#배치로 실행한거라면 시스템 종료
@@ -1450,7 +1485,7 @@ if __name__ == "__main__":
 
             dt       = datetime.datetime.now()
             yyyymmdd = "{0}{1:02d}{2:02d}".format(dt.year, dt.month, dt.day)
-            with open("logging/{0}/{1}.log".format(yyyymmdd, "console"), "a", encoding="UTF-8", ) as fileData:
+            with open("{0}{1}.log".format(UserContext.getLogDir(yyyymmdd), "console"), "a", encoding="UTF-8", ) as fileData:
                 fileData.write("".join(msg))
 
             if runType == "batch":#배치로 실행한거라면 시스템 종료

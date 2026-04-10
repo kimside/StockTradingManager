@@ -1,12 +1,18 @@
 import os, json, time, datetime, unicodedata;
 
+from modules.user import UserContext;
+
 class LogMaker:
     def __init__(self, parent=None, **kwargs):
         dt       = datetime.datetime.now();
         yyyymmdd = "{0}{1:02d}{2:02d}".format(dt.year, dt.month, dt.day);
         self.today_YYYYMMDD = yyyymmdd;
-        self.logDir = "logging/{0}/".format(self.today_YYYYMMDD);
-        os.makedirs(os.path.dirname(self.logDir), exist_ok=True);
+        os.makedirs(self.logDir, exist_ok=True);
+
+    #현재 사용자 컨텍스트를 반영한 로그 디렉토리. 로그인 이후 사용자가 바뀌면 자동으로 새 경로를 가리킨다.
+    @property
+    def logDir(self):
+        return UserContext.getLogDir(self.today_YYYYMMDD);
 
         self.nOrderType = {
             1: "신규매수",
@@ -410,5 +416,5 @@ class LogMaker:
             writeText.append(self.getFidLogText(key, obj[key]));
         writeText.append("\n");
 
-        with open("logging/{0}/{1}.log".format(self.today_YYYYMMDD, fileDiv), "a", encoding="UTF-8", ) as fileData:
+        with open("{0}{1}.log".format(self.logDir, fileDiv), "a", encoding="UTF-8", ) as fileData:
             fileData.writelines("".join(writeText));

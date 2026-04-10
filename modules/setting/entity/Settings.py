@@ -2,12 +2,21 @@ import json, pprint, datetime;
 
 from PyQt5 import uic, QtWidgets, QtCore, QtGui;
 
+from modules.user import UserContext;
+
 #########################################
 # Setting정보 Class #####################
 #########################################
 class Settings(object):
     def __init__(self):
-        self.settings = QtCore.QSettings("settings/config.ini", QtCore.QSettings.IniFormat);
+        self._initQSettings();
+
+    def _initQSettings(self):
+        self.settings = QtCore.QSettings(UserContext.getSettingsPath(), QtCore.QSettings.IniFormat);
+
+    def reload(self):
+        #사용자가 변경되었을 때 현재 UserContext 경로로 QSettings를 다시 초기화한다.
+        self._initQSettings();
 
     def __repr__(self):
         return pprint.pformat(vars(self), indent = 4, width = 1);
