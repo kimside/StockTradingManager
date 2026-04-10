@@ -2,6 +2,8 @@ import sys, os, pprint;
 
 from PyQt5               import uic, QtWidgets, QtCore, QtGui;
 
+from modules.user        import UserContext;
+
 #프로그램 기본 설정
     #당일 거래한 종목 조건식에서 다시 나와도 재매수금지
     #당일청산설정(15:10분에 전량 시장가 매도)
@@ -28,7 +30,7 @@ class ModalSetting(QtWidgets.QDialog, uic.loadUiType(resource_path("modules/sett
         self.setupUi(self);
         self.parent = parent;
         self.setWindowFlags(QtCore.Qt.WindowCloseButtonHint);
-        self.settings = QtCore.QSettings("settings/config.ini", QtCore.QSettings.IniFormat);
+        self.settings = QtCore.QSettings(UserContext.getSettingsPath(), QtCore.QSettings.IniFormat);
         self.getSetting();
         
         self.isChanged = False;
@@ -43,7 +45,12 @@ class ModalSetting(QtWidgets.QDialog, uic.loadUiType(resource_path("modules/sett
         self.vtsTouchDivideBuyActive.stateChanged.connect(self.changeValue);
         self.vslTouchDivideBuyActive.stateChanged.connect(self.changeValue);
         self.tabWidget.currentChanged.connect(self.currentChanged);
-    
+
+    def reload(self):
+        #사용자가 변경되었을 때 현재 UserContext 경로로 QSettings를 다시 초기화하고 설정을 재로드한다.
+        self.settings = QtCore.QSettings(UserContext.getSettingsPath(), QtCore.QSettings.IniFormat);
+        self.getSetting();
+
     def getSetting(self):
         runStartTime = self.settings.value("PROGRAM/vRunStartTime", "0900");
         runEndTime   = self.settings.value("PROGRAM/vRunEndTime"  , "1515");
